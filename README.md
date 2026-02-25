@@ -44,7 +44,7 @@ Bot ini cocok digunakan untuk:
 
 ---
 
-[MaouDabi GitHub](https://github.com/Dabilines/Dabi-Ai)
+[MaouDabi Documentation](https://github.com/Dabilines/Dabi-Ai-Documentation)
 
 <p align="center">
  <a href="https://www.instagram.com/maoudabi?igsh=YzljYTk1ODg3Zg==" target="_blank">
