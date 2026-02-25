@@ -44,7 +44,7 @@ Bot ini cocok digunakan untuk:
 
 ---
 
-[![MaouDabi GitHub](https://github-readme-stats.vercel.app/api?username=Dabilines\&show_icons=true\&theme=default#gh-light-mode-only)](https://github.com/Dabilines/Dabi-Ai#responsive-card-theme#gh-light-mode-only)
+[MaouDabi GitHub](https://github.com/Dabilines/Dabi-Ai)
 
 <p align="center">
  <a href="https://www.instagram.com/maoudabi?igsh=YzljYTk1ODg3Zg==" target="_blank">
