@@ -1,8 +1,7 @@
 {
   "ownerSetting": {
     "ownerNumber": [
-      "6285194993977",
-      "6285199635033"
+      "6285194993977"
     ],
     "ownerName": "yumi",
     "public": true
@@ -37,7 +36,7 @@
   },
   "apikey": {
     "termai": {
-      "key": "Dabi-Key",
+      "key": "Bell409",
       "web": "https://api.termai.cc"
     }
   }
