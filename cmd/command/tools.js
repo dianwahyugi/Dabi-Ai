@@ -361,6 +361,41 @@ export default function tools(ev) {
   })
 
   ev.on({
+    name: 'readmore',
+    cmd: ['rm', 'readmore'],
+    tags: 'Tools Menu',
+    desc: 'membuat teks baca selengkapnya',
+    owner: !1,
+    prefix: !0,
+    money: 100,
+    exp: 0.1,
+
+    run: async (xp, m, {
+      args,
+      chat,
+      cmd,
+      prefix
+    }) => {
+      try {
+        const txt = args?.join(' ')
+
+        if (!txt?.includes('|'))
+          return xp.sendMessage(chat.id, {
+            text: `format salah\ncontoh: ${prefix}${cmd} teks 1 | teks 2`
+          }, { quoted: m })
+
+        const [t1, t2] = txt.split('|').map(v => v.trim()),
+              result = `${t1}${global.readmore} ${t2}`
+
+        await xp.sendMessage(chat.id, { text: result }, { quoted: m })
+      } catch (e) {
+        err(`error pada ${cmd}`, e)
+        call(xp, e, m)
+      }
+    }
+  })
+
+  ev.on({
     name: 'rvo',
     cmd: ['rvo'],
     tags: 'Tools Menu',

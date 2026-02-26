@@ -213,8 +213,9 @@ export default function maker(ev) {
               img = m.message?.conversation || m.message?.imageMessage?.caption || q?.imageMessage || q?.stickerMessage,
               txt = args?.join(' ')
 
-        if (!img || !txt?.includes('|'))
+        if (!img || !txt?.includes('|')) {
           return xp.sendMessage(chat.id, { text: !img ? `reply gambar/stiker\ncontoh: ${prefix + cmd} atas | bawah` : `format salah\ncontoh: ${prefix + cmd} atas | bawah` }, { quoted: m })
+        }
 
         await xp.sendMessage(chat.id, { react: { text: '⏳', key: m.key } })
 
