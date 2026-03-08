@@ -62,22 +62,28 @@ export default function info(ev) {
         const kota = args.join(' ')
         if (!kota) return xp.sendMessage(chat.id, { text: `contoh: ${prefix}${cmd} jakarta` }, { quoted: m })
 
-        const url = await fetch(`https://api.ureshii.my.id/api/internet/info-cuaca?kota=${encodeURIComponent(kota)}`),
+        const url = await fetch(`https://api.ootaizumi.web.id/lokasi/cuaca?lokasi=${encodeURIComponent(kota)}`),
               res = await url.json()
 
         await xp.sendMessage(chat.id, { react: { text: '⏳', key: m.key } })
 
-        if (!res.kota || !res.cuaca) return xp.sendMessage(chat.id, { text: `gagal mendapatkan info cuaca untuk kota: ${kota}` }, { quoted: m })
+        if (!res.status || !res.result) return xp.sendMessage(chat.id, { text: `gagal mendapatkan info cuaca untuk kota: ${kota}` }, { quoted: m })
+
+        const {
+          namaTempat,
+          lokasi,
+          cuaca
+        } = res.result
 
         let txt = '*Cuaca Hari Ini Di*\n\n'
-            txt += `${head}${opb} ${res.kota}, ${res.negara} ${clb}\n`
-            txt += `${body} ${btn} *Cuaca:* ${res.cuaca}\n`
-            txt += `${body} ${btn} *Kelembapan:* ${res.kelembapan}%\n`
-            txt += `${body} ${btn} *Kec Angin:* ${res.angin_kpj} m/s\n`
-            txt += `${body} ${btn} *Suhu Saat Ini:* ${res.suhu_c}°\n`
-            txt += `${body} ${btn} *Suhu Tertinggi:* ${res.suhu_tertinggi_c}°\n`
-            txt += `${body} ${btn} *Suhu Terendah:* ${res.suhu_terendah_c}°\n`
-            txt += `${foot}${line}\n`
+            txt += `${head}${opb} ${namaTempat}, ${lokasi.kotkab}, ${lokasi.provinsi} ${clb}\n`
+            txt += `${body} ${btn} *Cuaca:* ${cuaca.deskripsi}\n`
+            txt += `${body} ${btn} *Kelembapan:* ${cuaca.kelembapan}\n`
+            txt += `${body} ${btn} *Kec Angin:* ${cuaca.angin.kecepatan}\n`
+            txt += `${body} ${btn} *Suhu Saat Ini:* ${cuaca.suhu}\n`
+            txt += `${body} ${btn} *Tutupan Awan:* ${cuaca.tutupanAwan}\n`
+            txt += `${body} ${btn} *Jarak Pandang:* ${cuaca.jarakPandang.teks}\n`
+            txt += `${foot}${line}\n\n`
             txt += 'Semoga harimu menyenangkan! Jangan lupa bawa payung kalau cuacanya mendung ya! ☂'
 
         await xp.sendMessage(chat.id, { text: txt }, { quoted: m })
@@ -253,6 +259,85 @@ export default function info(ev) {
             }
           }
         }, { quoted: m })
+      } catch (e) {
+        err(`error pada ${cmd}`, e)
+        call(xp, e, m)
+      }
+    }
+  })
+
+  ev.on({
+    name: 'leaderboard',
+    cmd: ['ld', 'leaderboard'],
+    ocrs: ['exp', 'money', 'cmd', 'ai', 'rb'],
+    tags: 'Info Menu',
+    desc: 'list leaderboard user',
+    owner: !1,
+    prefix: !0,
+    money: 1,
+    exp: 0.1,
+
+    run: async (xp, m, {
+      args,
+      chat,
+      cmd,
+      ocrs,
+      prefix
+    }) => {
+      try {
+        const usr = Object.values(db().key).find(u => u.jid === chat.sender),
+              data = Object.values(db().key),
+              Format = n => n.toLocaleString('id-ID')
+
+        if (!ocrs) return xp.sendMessage(chat.id, { text: `contoh:\n${prefix + cmd} money\n${prefix + cmd} exp\n${prefix + cmd} cmd\n${prefix + cmd} ai\n${prefix + cmd} rb` }, { quoted: m })
+
+        const sort =
+          ocrs === 'money'
+          ? data.map(v => ({
+              jid: v.jid,
+              name: v.jid.split('@')[0],
+              total: (v.moneyDb?.money || 0) + (v.moneyDb?.moneyInBank || 0)
+            })).sort((a,b) => b.total - a.total)
+
+          : ocrs === 'exp'
+          ? data.map(v => ({
+              jid: v.jid,
+              name: v.jid.split('@')[0],
+              total: v.exp || 0
+            })).sort((a,b) => b.total - a.total)
+
+          : ocrs === 'cmd'
+          ? data.map(v => ({
+              jid: v.jid,
+              name: v.jid.split('@')[0],
+              total: v.cmd || 0
+            })).sort((a,b) => b.total - a.total)
+
+          : ocrs === 'ai'
+          ? data.map(v => ({
+              jid: v.jid,
+              name: v.jid.split('@')[0],
+              total: v.ai?.chat || 0
+            })).sort((a,b) => b.total - a.total)
+
+          : data.map(v => ({
+              jid: v.jid,
+              name: v.jid.split('@')[0],
+              total: v.game?.robbery?.cost || 0
+            })).sort((a,b) => b.total - a.total)
+
+        const top = sort.slice(0,10)
+
+        let txt = `🏆 *LEADERBOARD ${ocrs.toUpperCase()}*\n\n`
+
+        top.forEach((v,i) => {
+          txt += `${i+1}. ${v.name}\n`
+          txt += `   ${ocrs}: ${Format(v.total)}\n\n`
+        })
+
+        xp.sendMessage(chat.id,{
+          text: txt
+        },{ quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
         call(xp, e, m)
