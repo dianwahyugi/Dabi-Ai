@@ -79,7 +79,6 @@ export default function maker(ev) {
 
           ;[input, output, final].forEach(p => fs.existsSync(p) && fs.unlinkSync(p))
         })
-
       } catch (e) {
         err(`error pada ${cmd}`, e)
         call(xp, e, m)
@@ -103,9 +102,7 @@ export default function maker(ev) {
       cmd
     }) => {
       try {
-        if (!args.length) {
-          return xp.sendMessage(chat.id, { text: 'example: .fakengl halo' }, { quoted: m })
-        }
+        if (!args.length) return xp.sendMessage(chat.id, { text: 'example: .fakengl halo' }, { quoted: m })
 
         await xp.sendMessage(chat.id, { react: { text: '⏳', key: m.key } })
 
@@ -117,7 +114,48 @@ export default function maker(ev) {
 
         res ? !0 : await xp.sendMessage(chat.id, { text: 'gagal membuat fakengl' }, { quoted: m })
       } catch (e) {
-        err('error pada fakengl', e)
+        err(`error pada ${cmd}`, e)
+        call(xp, e, m)
+      }
+    }
+  })
+
+  ev.on({
+    name: 'iqc',
+    cmd: ['iqc'],
+    tags: 'Maker Menu',
+    desc: 'membuat quoted chat iphone',
+    owner: !1,
+    prefix: !0,
+    money: 150,
+    exp: 0.1,
+
+    run: async (xp, m, {
+      args,
+      chat,
+      cmd,
+      prefix
+    }) => {
+      try {
+        const time = global.time.timeIndo("Asia/Jakarta", "HH:mm"),
+              txt = args.join(' ')
+
+        if (!txt?.includes('|')) return xp.sendMessage(chat.id, { text: `contoh penggunaan:\n${prefix}${cmd} text pesan | sim card/catatan\n${prefix}${cmd} halo aku ${botName} | indosat\n${prefix}${cmd} halo aku ${botName} | hari yang cerah` }, { quoted: m })
+
+        const q = txt?.split('|'),
+              text = q?.[0]?.trim(),
+              crr = q?.[1]?.trim()
+
+        await xp.sendMessage(chat.id, { react: { text: '⏳', key: m.key}})
+
+        let res = await axios.get(`${global.termaiWeb}/api/maker/iqc?text=${encodeURIComponent(text)}&timestamp=${time}&emojiType=ios&statusBarTime=${time}&signal=4&battery=56&carrier=${encodeURIComponent(crr)}&key=${termaiKey}`, {
+              responseType: 'arraybuffer'
+            }),
+            buf = res.data
+
+        await xp.sendMessage(chat.id, { image: buf, caption: `sukses membuat iqc` }, { quoted: m })
+      } catch (e) {
+        err(`error pada ${cmd}`, e)
         call(xp, e, m)
       }
     }
@@ -153,9 +191,9 @@ export default function maker(ev) {
         if (!args.length && !reply) return xp.sendMessage(chat.id, { text: `reply atau masukan teks\ncontoh: .qc white halo dunia\ndaftar warna:\n${Object.keys(colors).join('\n- ')}` }, { quoted: m })
 
         const [clr, ...rest] = (args.join(' ') || '').split(' '),
-              valid          = !!colors[clr],
-              warna          = reply ? (valid ? colors[clr] : colors.white) : (valid ? colors[clr] : !1),
-              teks           = reply ? (valid ? (rest.join(' ') || reply) : reply) : (valid ? rest.join(' ') : '')
+              valid = !!colors[clr],
+              warna = reply ? (valid ? colors[clr] : colors.white) : (valid ? colors[clr] : !1),
+              teks = reply ? (valid ? (rest.join(' ') || reply) : reply) : (valid ? rest.join(' ') : '')
 
         if (!warna) return xp.sendMessage(chat.id, { text: `masukan warna valid\ncontoh: .qc white halo dunia\ndaftar warna:\n${Object.keys(colors).join('\n- ')}` }, { quoted: m })
 
