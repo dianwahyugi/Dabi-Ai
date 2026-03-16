@@ -139,14 +139,16 @@ function jadibotConnect(Xp, restart, sessiFol, from) {
         case DisconnectReason.connectionLost:
         case DisconnectReason.timedOut:
         case 428:
-          return startDestroyTimer()
+          startDestroyTimer()
+          return restart()
 
         case DisconnectReason.restartRequired:
           console.log(c.yellowBright.bold('Restart diperlukan'))
           return restart()
 
         default:
-          return startDestroyTimer()
+          startDestroyTimer()
+          return restart()
       }
     }
 
