@@ -91,6 +91,7 @@ async function evJadiBot(from) {
             num = prtNum || sendNum?.replace(/@s\.whatsapp\.net$/, '')
 
       m.key.jadibot = num === botId
+      log(m)
 
       const chat = global.chat(m, botName),
             time = global.time.timeIndo('Asia/Jakarta', 'HH:mm'),

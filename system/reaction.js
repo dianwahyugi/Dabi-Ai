@@ -1,3 +1,6 @@
+import fetch from 'node-fetch'
+import { vn } from '../cmd/interactive.js'
+
 async function rct_key(xp, m) {
   try {
     const react = m.message?.reactionMessage,
@@ -40,6 +43,15 @@ async function rct_key(xp, m) {
         )
         return !0
 
+      case '🦵':
+        if (!chat.group) return !1
+        await xp.groupParticipantsUpdate(
+          chat.id,
+          [target.key.participant],
+          'remove'
+        )
+        return !0
+
       case '💨':
         if (!chat.group) return !1
         await xp.groupParticipantsUpdate(
@@ -47,6 +59,23 @@ async function rct_key(xp, m) {
           [target.key.participant],
           'demote'
         )
+        return !0
+
+      case '🎤':
+        const voice = 'dabi',
+              pitch = 0,
+              speed = 0.9,
+              msg = target.message || {},
+              text =
+                msg?.conversation ||
+                msg?.extendedTextMessage?.text
+
+        if (!text) return !1
+
+        const res = await fetch(`${termaiWeb}/api/text2speech/elevenlabs?text=${encodeURIComponent(text)}&voice=${encodeURIComponent(voice)}&pitch=${encodeURIComponent(pitch)}&speed=${encodeURIComponent(speed)}&key=${termaiKey}`),
+              audio = Buffer.from(await res.arrayBuffer())
+
+        await vn(xp, audio, target)
         return !0
 
       default:
@@ -57,12 +86,14 @@ async function rct_key(xp, m) {
   }
 }
 
-let rct_txt = `> berikut penjelasan fitur reaction cmd\n`
+let rct_txt = `*berikut penjelasan fitur reaction cmd*\n`
     rct_txt += `${readmore}\n`
     rct_txt += `Reaction Command adalah fitur bot yang memungkinkan pengguna menjalankan perintah hanya dengan memberi reaction emoji pada pesan tertentu, tanpa mengetik command.\n\n`
     rct_txt += `*cara pakai*\nreact:\n`
     rct_txt += `❌ → hapus pesan ( digrup )\n`
     rct_txt += `👑 → menjadikan admin grup\n`
-    rct_txt += `💨 → menurukan admin grup`
+    rct_txt += `💨 → menurukan admin grup\n`
+    rct_txt += `🎤 → membuat voice chat\n`
+    rct_txt += `🦵 → mengeluarkan member dari grup`
 
 export { rct_key, rct_txt }
