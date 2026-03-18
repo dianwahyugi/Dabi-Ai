@@ -20,13 +20,15 @@ export default function download(ev) {
     }) => {
       try {
         const quoted = m.message?.extendedTextMessage?.contextInfo?.quotedMessage,
-              txt = quoted?.conversation || args.join(' ')
+              txt = quoted?.conversation || args.join(' '),
+              match = txt?.match(/https?:\/\/[^\s]+/gi),
+              link = match ? match[0] : ''
 
-        if (!txt || !/facebook\.com|fb\.watch/i.test(txt)) return xp.sendMessage(chat.id, { text: !txt ? `reply/masukan link fb\ncontoh: ${prefix}${cmd} https://www.facebook.com/share/v/1Dm66ZGfSY/` : 'link tidak valid' }, { quoted: m })
+        if (!link || !/facebook\.com|fb\.watch/i.test(link)) return xp.sendMessage(chat.id, { text: !link ? `reply/masukan link fb\ncontoh: ${prefix}${cmd} https://www.facebook.com/share/v/1Dm66ZGfSY/` : 'link tidak valid' }, { quoted: m })
 
         await xp.sendMessage(chat.id, { react: { text: '⏳', key: m.key } })
 
-        const url = await fetch(`https://api.danzy.web.id/api/download/facebook?url=${encodeURIComponent(txt)}`).then(r => r.json())
+        const url = await fetch(`https://api.danzy.web.id/api/download/facebook?url=${encodeURIComponent(link)}`).then(r => r.json())
 
         if (!url.status || !url.data) return xp.sendMessage(chat.id, { text: 'video tidak ditemukan' }, { quoted: m })
 
@@ -116,7 +118,7 @@ export default function download(ev) {
               match = url.match(/github\.com\/([^\/]+)\/([^\/\s]+)/)
 
         if (!url || !url.includes('github.com')) {
-          return xp.sendMessage(chat.id, { text: !url ? `contoh: ${prefix}${cmd} https://github.com/MaouDabi0/Dabi-Ai` : `link tidak valid` }, { quoted: m })
+          return xp.sendMessage(chat.id, { text: !url ? `contoh: ${prefix}${cmd} https://github.com/Dabilines/Dabi-Ai` : `link tidak valid` }, { quoted: m })
         }
 
         await xp.sendMessage(chat.id, { react: { text: '⏳', key: m.key } })

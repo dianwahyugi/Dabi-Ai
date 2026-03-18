@@ -739,22 +739,33 @@ export default function owner(ev) {
     exp: 0.1,
 
     run: async (xp, m, {
+      args,
       chat,
       cmd
     }) => {
       try {
-        const usr = Object.values(db().key).find(u => u.jid === chat.sender)
+        const quoted = m.message?.extendedTextMessage?.contextInfo,
+              user = quoted?.participant || quoted?.mentionedJid?.[0],
+              raw = args && args[0] ? args[0] : null,
+              num = raw ? global.number(raw) : null,
+              target = user || num || chat.sender
 
-        if (!usr || !m.key?.jadibot) return xp.sendMessage(chat.id, { text: 'cmd berhenti disini' }, { quoted: m })
+        const usr = Object.values(db().key).find(u => u.jid === target)
 
-        const sessi = `./connect/${usr?.jid?.replace(/@s\.whatsapp\.net$/, '')}`
+        if (!usr) return
 
-        if (!global.client[usr?.jid?.replace(/@s\.whatsapp\.net$/, '')] || !fs.existsSync(sessi)) return xp.sendMessage(chat.id, { text: 'kamu tidak sedang jadi bot' }, { quoted: m })
+        const id = usr?.jid?.replace(/@s\.whatsapp\.net$/, ''),
+              sessi = `./connect/${id}`
 
-        fs.rmSync(sessi, { recursive: !0, force: !0 })
-        delete global.client[usr?.jid?.replace(/@s\.whatsapp\.net$/, '')]
+        if (!global.client[id] || !fs.existsSync(sessi)) {
+          return xp.sendMessage(chat.id, { text: 'kamu tidak sedang jadi bot' }, { quoted: m })
+        }
 
         await xp.sendMessage(chat.id, { text: 'berhasil berhenti jadi bot\njangan lupa hapus perangkat tertaut di whatsapp anda' }, { quoted: m })
+
+        fs.rmSync(sessi, { recursive: !0, force: !0 })
+
+        delete global.client[id]
       } catch (e) {
         err(`error pada ${cmd}`, e)
         call(xp, e, m)

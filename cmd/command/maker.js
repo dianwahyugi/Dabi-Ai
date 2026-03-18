@@ -178,10 +178,10 @@ export default function maker(ev) {
     }) => {
       try {
         const quoted = m.message?.extendedTextMessage?.contextInfo,
-              reply  = quoted?.quotedMessage?.conversation,
-              user   = quoted?.participant || quoted?.mentionedJid?.[0] || chat.id,
-              name   = chat.pushName || m.key?.pushName || m.key.participant,
-              defPP  = 'https://c.termai.cc/i0/7DbG.jpg',
+              reply = quoted?.quotedMessage?.conversation,
+              user = quoted?.participant || quoted?.mentionedJid?.[0] || chat.id,
+              name = chat.pushName || m.key?.pushName || m.key.participant,
+              defPP = 'https://c.termai.cc/i0/7DbG.jpg',
               colors = {
                 black: '#000000',
                 white: '#ffffff',
@@ -222,7 +222,6 @@ export default function maker(ev) {
               stc  = await writeExifImg(buff, { packname: 'My sticker', author: '© ' + name })
 
         await xp.sendMessage(chat.id, { sticker: { url: stc } }, { quoted: m })
-
       } catch (e) {
         err(`error pada ${cmd}`, e)
         call(xp, e, m)
@@ -338,7 +337,7 @@ export default function maker(ev) {
     name: 'to img',
     cmd: ['toimg'],
     tags: 'Maker Menu',
-    desc: 'konversi stiker ke gambar ( kecuali stiker animasi )',
+    desc: 'konversi stiker ke gambar',
     owner: !1,
     prefix: !0,
     money: 150,

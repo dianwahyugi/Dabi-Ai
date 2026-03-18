@@ -328,7 +328,7 @@ export default function info(ev) {
 
         const top = sort.slice(0,10)
 
-        let txt = `🏆 *LEADERBOARD ${ocrs.toUpperCase()}*\n\n`
+        let txt = `🏆 *LEADERBOARD ${ocrs.toUpperCase()}* 🏆\n\n`
 
         top.forEach((v,i) => {
           txt += `${i+1}. ${v.name}\n`
@@ -338,6 +338,35 @@ export default function info(ev) {
         xp.sendMessage(chat.id,{
           text: txt
         },{ quoted: m })
+      } catch (e) {
+        err(`error pada ${cmd}`, e)
+        call(xp, e, m)
+      }
+    }
+  })
+
+  ev.on({
+    name: 'list admin',
+    cmd: ['lsadm', 'listadmin'],
+    tags: 'Info Menu',
+    desc: 'mentag all admin',
+    owner: !1,
+    prefix: !0,
+    money: 1,
+    exp: 0.1,
+
+    run: async (xp, m, {
+      chat,
+      cmd
+    }) => {
+      try {
+        if (!chat.group) return xp.sendMessage(chat.id, { text: 'perintah ini hanya bisa digunakan digrup' }, { quoted: m })
+
+        const meta = groupCache.get(chat.id) || await getMetadata(chat.id, xp),
+              admins = meta.participants.filter(v => v.admin).map(v => v.id),
+              text = admins.map((v, i) => `${i + 1}. @${v.split('@')[0]}`).join('\n')
+
+        xp.sendMessage(chat.id, { text, mentions: admins }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
         call(xp, e, m)
