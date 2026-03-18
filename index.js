@@ -53,7 +53,7 @@ const startBot = async () => {
         log(c.greenBright.bold('Pairing Code:'), c.cyanBright.bold(show))
       } catch (e) {
         if (e?.output?.statusCode === 428 || /Connection Closed/i.test(e?.message || ''))
-          return handleSessionIssue('Pairing timeout', startBot)
+          return handleSessi('Pairing timeout', startBot)
         throw e
       }
     }
