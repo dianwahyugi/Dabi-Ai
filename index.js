@@ -35,7 +35,7 @@ const startBot = async () => {
     const { state, saveCreds } = await useMultiFileAuthState('./connect/session')
     xp = makeWASocket({
       auth: state,
-      version: [2, 3000, 1029700657],
+      version: [2, 3000, 1033936837],
       printQRInTerminal: !1,
       syncFullHistory: !1,
       logger: logLevel,
