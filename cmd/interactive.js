@@ -153,6 +153,8 @@ async function bell(txt, m, xp, voice = "dabi", pitch = 0, speed = 0.9) {
 }
 
 const signal = async (text, m, xp, ev) => {
+  if (m.key?.jadibot) return
+
   const idBot = xp.user?.id?.split(':')[0] + '@s.whatsapp.net',
         chat = global.chat(m),
         botName = global.botName?.toLowerCase(),

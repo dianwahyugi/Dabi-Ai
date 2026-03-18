@@ -20,7 +20,7 @@ async function ocrs(xp, m) {
           raw = pre ? text.slice(pre.length).trim() : text.trim(),
           [base, target, ...rest] = raw.split(/\s+/)
 
-    if (!pre || !base || base.toLowerCase() !== 'set') return !1
+    if (!base || base.toLowerCase() !== 'set') return !1
 
     const listMenu = () => {
       const list = getSetList()
