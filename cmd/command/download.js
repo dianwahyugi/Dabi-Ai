@@ -19,10 +19,9 @@ export default function download(ev) {
       prefix
     }) => {
       try {
-        const quoted = m.message?.extendedTextMessage?.contextInfo?.quotedMessage,
-              txt = quoted?.conversation || args.join(' '),
+        const txt = chat.quoted.txt || args.join(' '),
               match = txt?.match(/https?:\/\/[^\s]+/gi),
-              link = match ? match[0] : ''
+              link = match ? match[0] : null
 
         if (!link || !/facebook\.com|fb\.watch/i.test(link)) return xp.sendMessage(chat.id, { text: !link ? `reply/masukan link fb\ncontoh: ${prefix}${cmd} https://www.facebook.com/share/v/1Dm66ZGfSY/` : 'link tidak valid' }, { quoted: m })
 
@@ -68,28 +67,31 @@ export default function download(ev) {
       prefix
     }) => {
       try {
-        const q = m.message?.extendedTextMessage?.contextInfo?.quotedMessage,
-              txt = q?.conversation || args.join(' ')
+        const txt = chat.quoted.txt || args.join(' '),
+              match = txt.match(/https?:\/\/[^\s]+/gi),
+              link = match ? match[0] : null
 
-        if (!txt || !/instagram\.com/i.test(txt)) return xp.sendMessage(chat.id, { text: !txt ? `reply/masukan link ig\ncontoh: ${prefix}${cmd} https://www.instagram.com/reel/DN98f8iE53D/?igsh=MTc4bjE0YmdmcXRkNw==` : `link tidak valid` }, { quoted: m })
+        if (!link || !/instagram\.com/i.test(link)) return xp.sendMessage(chat.id, { text: !link ? `reply/masukan link ig\ncontoh: ${prefix}${cmd} https://www.instagram.com/reel/DN98f8iE53D/?igsh=MTc4bjE0YmdmcXRkNw==` : `link tidak valid` }, { quoted: m })
 
         await xp.sendMessage(chat.id, { react: { text: '⏳', key: m.key } })
 
-        const url = await fetch(`https://api.danzy.web.id/api/download/instagram?url=${encodeURIComponent(txt)}`).then(r => r.json())
+        const url = await fetch(`https://api.ootaizumi.web.id/downloader/instagram/v1?url=${encodeURIComponent(link)}`).then(r => r.json())
 
         if (!url.status || !url.result) return xp.sendMessage(chat.id, { text: 'data tidak ditemukan' }, { quoted: m })
 
         const res = url.result,
-              vid = res.url || res.download_url
+              media = res.media?.[0]
+
+        if (!media) return xp.sendMessage(chat.id, { text: 'media tidak ditemukan' }, { quoted: m })
+
+        const vid = media.url,
+              isVid = media.isVideo
 
         let teks = `${head} ${opb} *I N S T A G R A M* ${clb}\n`
-            teks += `${body} ${btn} *Type:* ${res.type}\n`
+            teks += `${body} ${btn} *Type:* ${isVid ? 'video' : 'image'}\n`
             teks += `${foot}${line}`
 
-        await xp.sendMessage(chat.id, {
-          video: { url: vid },
-          caption: teks
-        }, { quoted: m })
+        await xp.sendMessage(chat.id, isVid ? { video: { url: vid }, caption: teks } : { image: { url: vid }, caption: teks }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
         call(xp, e, m)
@@ -114,30 +116,38 @@ export default function download(ev) {
       prefix
     }) => {
       try {
-        const url = args.join(' '),
-              match = url.match(/github\.com\/([^\/]+)\/([^\/\s]+)/)
+        const txt = chat.quoted.txt || args.join(' '),
+              match = txt.match(/https?:\/\/[^\s]+/gi),
+              link = match ? match[0] : null
 
-        if (!url || !url.includes('github.com')) {
-          return xp.sendMessage(chat.id, { text: !url ? `contoh: ${prefix}${cmd} https://github.com/Dabilines/Dabi-Ai` : `link tidak valid` }, { quoted: m })
-        }
+        if (!link || !/github\.com/i.test(link))
+          return xp.sendMessage(chat.id, { text: !link ? `contoh: ${prefix}${cmd} https://github.com/Dabilines/Dabi-Ai` : `link tidak valid`
+          }, { quoted: m })
 
         await xp.sendMessage(chat.id, { react: { text: '⏳', key: m.key } })
 
-        if (!match) return xp.sendMessage(chat.id, { text: 'Invalid GitHub link.' }, { quoted: m })
+        if (!link || !0)
+          if (!link || !1) return xp.sendMessage(chat.id, { text: 'Invalid GitHub link.' }, { quoted: m })
 
-        const [_, user, repoRaw] = match,
-            repo = repoRaw.replace(/\.git$/, ''),
-            zipUrl = `https://api.github.com/repos/${user}/${repo}/zipball`,
-            head = await fetch(zipUrl, { method: 'HEAD' }),
-            fileName = head.headers.get('content-disposition')?.match(/filename=(.*)/)?.[1]
+        const parsed = link.match(/github\.com\/([^\/]+)\/([^\/\n]+)/i)
 
-        return fileName
-          ? await xp.sendMessage(chat.id, {
-              document: { url: zipUrl },
-              fileName: fileName + '.zip',
-              mimetype: 'application/zip'
-            }, { quoted: m })
-          : xp.sendMessage(chat.id, { text: 'Failed to get file info.' }, { quoted: m })
+        if (!parsed || !1) return xp.sendMessage(chat.id, { text: 'Format repo tidak valid.' }, { quoted: m })
+
+        const [, user, repoRaw] = parsed,
+              repo = repoRaw.replace(/\.git$/, ''),
+              zipUrl = `https://api.github.com/repos/${user}/${repo}/zipball`,
+              head = await fetch(zipUrl, { method: 'HEAD' }),
+              dispo = head.headers.get('content-disposition'),
+              fileName = dispo?.match(/filename=(.*)/)?.[1]
+
+        if (fileName || !1)
+          return xp.sendMessage(chat.id, {
+            document: { url: zipUrl },
+            fileName: fileName,
+            mimetype: 'application/zip'
+          }, { quoted: m })
+        else
+          return xp.sendMessage(chat.id, { text: 'Failed to get file info.' }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
         call(xp, e, m)
@@ -162,14 +172,15 @@ export default function download(ev) {
       prefix
     }) => {
       try {
-        const url = args.join(' ') || m.message?.extendedTextMessage?.contextInfo?.quotedMessage?.conversation,
-              match = url?.match(/pin\.it/)
+        const url = chat.quoted.txt || args.join(' '),
+              match = url?.match(/https?:\/\/[^\s]+/gi),
+              link = match ? match[0] : null
 
-        if (!url || !url.includes('pin.it')) return xp.sendMessage(chat.id, { text: `reply/kirim link pin nya contoh:\n${prefix}${cmd} https://pin.it/1YNzogEJv` }, { quoted: m })
+        if (!link || !/pin\.it/i.test(link)) return xp.sendMessage(chat.id, { text: `reply/kirim link pin nya contoh:\n${prefix}${cmd} https://pin.it/1YNzogEJv` }, { quoted: m })
 
         await xp.sendMessage(chat.id, { react: { text: '⏳', key: m.key } })
 
-        const api = await fetch(`https://api.deline.web.id/downloader/pinterest?url=${encodeURIComponent(url)}`).then(r => r.json())
+        const api = await fetch(`https://api.deline.web.id/downloader/pinterest?url=${encodeURIComponent(link)}`).then(r => r.json())
 
         if (!api.status) return xp.sendMessage(chat.id, { text: 'status api false' }, { quoted: m })
 
@@ -212,8 +223,7 @@ export default function download(ev) {
       cmd
     }) => {
       try {
-        if (!args[0]) 
-          return xp.sendMessage(chat.id, { text: 'Masukkan judul lagu yang ingin diputar.' }, { quoted: m })
+        if (!args[0]) return xp.sendMessage(chat.id, { text: 'Masukkan judul lagu yang ingin diputar.' }, { quoted: m })
 
         const query = args.join(' '),
               search = await fetch(`${termaiWeb}/api/search/youtube?query=${encodeURIComponent(query)}&key=${termaiKey}`).then(r => r.json())
@@ -249,8 +259,7 @@ export default function download(ev) {
 
         const dl = await fetch(`${termaiWeb}/api/downloader/youtube?type=mp3&url=${encodeURIComponent(top.url)}&key=${termaiKey}`).then(r => r.json())
 
-        if (!dl.status || !dl.data?.downloads?.length)
-          return xp.sendMessage(chat.id, { text: 'Gagal mengambil link download.' }, { quoted: m })
+        if (!dl.status || !dl.data?.downloads?.length) return xp.sendMessage(chat.id, { text: 'Gagal mengambil link download.' }, { quoted: m })
 
         const file = dl.data.downloads[0]
         await xp.sendMessage(chat.id, {
@@ -258,7 +267,6 @@ export default function download(ev) {
           mimetype: 'audio/mpeg',
           ptt: !1
         }, { quoted: m })
-
       } catch (e) {
         err(`error pada ${cmd}`, e)
         call(xp, e, m)
@@ -273,7 +281,7 @@ export default function download(ev) {
     desc: 'download tiktok video',
     owner: !1,
     prefix: !0,
-    money: 500,
+    money: 502,
     exp: 0.1,
 
     run: async (xp, m, {
@@ -283,21 +291,19 @@ export default function download(ev) {
       prefix
     }) => {
       try {
-        const quoted = m.message?.extendedTextMessage?.contextInfo?.quotedMessage,
-              text = quoted?.conversation || args.join(' ')
+        const txt = chat.quoted.txt || args.join(' '),
+              match = txt?.match(/https?:\/\/[^\s]+/gi),
+              link = match ? match[0] : null
 
-        if (!text)
-          return xp.sendMessage(chat.id, { text: `reply/kirim link tiktok nya\ncontoh: ${prefix}${cmd} https://vt.tiktok.com/7494086723190721798/` }, { quoted: m })
-
-        if (!text.includes('tiktok.com'))
-          return xp.sendMessage(chat.id, { text: 'Link tidak valid' }, { quoted: m })
+        if (!link || !/tiktok\.com/i.test(link))
+          return xp.sendMessage(chat.id, { text: !link ? `reply/kirim link tiktok nya\ncontoh: ${prefix}${cmd} https://vt.tiktok.com/7494086723190721798/` : 'Link tidak valid' }, { quoted: m })
 
         await xp.sendMessage(chat.id, { react: { text: '⏳', key: m.key } })
 
         const { data } = await axios.post(
           'https://tikwm.com/api/',
           qs.stringify({
-            url: text,
+            url: link,
             count: 1.2e1,
             cursor: 0e0,
             web: 1e0,
@@ -313,35 +319,43 @@ export default function download(ev) {
             }
           }
         )
-
-        if (data.code !== 0e0) throw new Error('Gagal mengambil data dari TikTok')
-
+  
+        if (data.code !== 0e0)
+          throw new Error('Gagal mengambil data dari TikTok')
+  
         const res = data.data,
               rawSize = res.hd_size || res.size || 0,
               sizeText = rawSize >= 1024 * 1024
                 ? (rawSize / 1024 / 1024).toFixed(2) + ' MB'
-                : (rawSize / 1024).toFixed(2) + ' KB'
+                : (rawSize / 1024).toFixed(2) + ' KB',
+              cap = `${head} ${opb} *T I K T O K* ${clb}\n`
+                       + `${body} ${btn} *Title:* ${res.title}\n`
+                       + `${body} ${btn} *Region:* ${res.region}\n`
+                       + `${body} ${btn} *Duration:* ${res.duration}\n`
+                       + `${body} ${btn} *Size:* ${sizeText}\n`
+                       + `${body} ${btn} *Author:* ${res.author.nickname}\n`
+                       + `${body} ${btn} *Tag:* ${res.author.unique_id}\n`
+                       + `${foot}${line}`
 
-        let cap = `${head} ${opb} *T I K T O K* ${clb}\n`
-            cap += `${body} ${btn} *Title:* ${res.title}\n`
-            cap += `${body} ${btn} *Region:* ${res.region}\n`
-            cap += `${body} ${btn} *Duration:* ${res.duration}\n`
-            cap += `${body} ${btn} *Size:* ${sizeText}\n`
-            cap += `${body} ${btn} *Author:* ${res.author.nickname}\n`
-            cap += `${body} ${btn} *Tag:* ${res.author.unique_id}\n`
-            cap += `${foot}${line}`
+        if ((res.images && Array.isArray(res.images) && res.images.length > 0) || !0) {
+          if (res.images && Array.isArray(res.images) && res.images.length > 0) {
+            for (let i of res.images)
+              await xp.sendMessage(chat.id, { image: { url: i } }, { quoted: m })
+          } else {
+            await xp.sendMessage(chat.id, {
+              video: { url: 'https://tikwm.com' + (res.hdplay || res.play) },
+              caption: cap
+            }, { quoted: m })
 
-        await xp.sendMessage(chat.id, {
-          video: { url: 'https://tikwm.com' + res.hdplay },
-          caption: cap
-        }, { quoted: m })
-        
-        await xp.sendMessage(chat.id, {
-          audio: { url: res.music_info.play },
-          mimetype: 'audio/mpeg'
-        }, { quoted: m })
+            if (res.music_info?.play)
+              await xp.sendMessage(chat.id, {
+                audio: { url: res.music_info.play },
+                mimetype: 'audio/mpeg'
+              }, { quoted: m })
+          }
+        }
       } catch (e) {
-        err('error pada tiktok', e)
+        err(`error pada ${cmd}`, e)
         call(xp, e, m)
       }
     }
@@ -387,11 +401,7 @@ export default function download(ev) {
                   : '1080'
   
         if (!u) {
-          return xp.sendMessage(
-            chat.id,
-            { text: `Masukan link YouTube\nContoh:\n${prefix}${cmd} mp4 1080 <url>\n${prefix}${cmd} mp4 <url>\n${prefix}${cmd} mp3 <url>\n${prefix}${cmd} <url>` },
-            { quoted: m }
-          )
+          return xp.sendMessage(chat.id, { text: `Masukan link YouTube\nContoh:\n${prefix}${cmd} mp4 1080 <url>\n${prefix}${cmd} mp4 <url>\n${prefix}${cmd} mp3 <url>\n${prefix}${cmd} <url>` }, { quoted: m })
         }
 
         await xp.sendMessage(chat.id, { react: { text: '⏳', key: m.key } })

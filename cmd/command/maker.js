@@ -23,8 +23,7 @@ export default function maker(ev) {
       cmd
     }) => {
       try {
-        const quoted = m.message?.extendedTextMessage?.contextInfo?.quotedMessage,
-              txt = args.join(' ') || quoted?.conversation,
+        const txt = args.join(' ') || chat.quoted.txt,
               name = chat.pushName.replace(/\s+/g, '').toLowerCase(),
               time = global.time.timeIndo("Asia/Jakarta", "HH"),
               url = `https://aqul-brat.hf.space/api/brat?text=${encodeURIComponent(txt)}`

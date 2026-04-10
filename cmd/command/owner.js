@@ -9,6 +9,46 @@ const config = path.join(dirname, './set/config.json'),
 
 export default function owner(ev) {
   ev.on({
+    name: 'add cost rampok',
+    cmd: ['addrampok', 'addcostrampok'],
+    tags: 'Owner Menu',
+    desc: 'menambahkan cost rampok',
+    owner: !0,
+    prefix: !0,
+    money: 1,
+    exp: 0.1,
+
+    run: async (xp, m, {
+      args,
+      chat,
+      cmd,
+      prefix
+    }) => {
+      try {
+        const usr = chat.quoted.id?.[0],
+              raw = args && args[0] ? args[0] : null,
+              num = raw ? global.number(raw) + '@s.whatsapp.net' : null,
+              target = usr || num
+
+        if (!target) return xp.sendMessage(chat.id, { text: `reply/tag atau masukan nomor\ncontoh: ${prefix}${cmd} ${chat.sender?.replace(/@s\.whatsapp\.net$/, '')} 1` }, { quoted: m })
+
+        const data = get.db(target),
+              amnt = Number(args[1]) || Number(args[0])
+
+        if (!data || amnt < 1) return xp.sendMessage(chat.id, { text: !data ? 'target belum terdaftar' : 'jumlah cost tidak valid'}, { quoted: m })
+
+        data.game.robbery.cost += amnt
+        save.db()
+
+        await xp.sendMessage(chat.id, { text: `berhasil menambahkan ${amnt} ke cost rampok ${data?.jid?.replace(/@s\.whatsapp\.net$/, '')}` }, { quoted: m })
+      } catch (e) {
+        err(`error pada ${cmd}`, e)
+        call(xp, e, m)
+      }
+    }
+  })
+
+  ev.on({
     name: 'add owner',
     cmd: ['addowner'],
     tags: 'Owner Menu',
@@ -24,12 +64,11 @@ export default function owner(ev) {
       cmd
     }) => {
       try {
-        const quoted = m.message?.extendedTextMessage?.contextInfo,
-              user = quoted?.participant || quoted?.mentionedJid?.[0],
+        const q = chat.quoted.id?.[0],
               raw = args && args[0] ? args[0] : null,
               num = raw ? global.number(raw) : null,
-              targetRaw = user || num,
-              target = targetRaw.replace(/@s\.whatsapp\.net$/, '')
+              trgRaw = q || num,
+              target = trgRaw.replace(/@s\.whatsapp\.net$/, '')
 
         if (!target) return xp.sendMessage(chat.id, { text: 'reply/tag/masukan nomor nya' }, { quoted: m })
 
@@ -40,7 +79,7 @@ export default function owner(ev) {
         cfg.ownerSetting.ownerNumber.push(target)
         fs.writeFileSync(config, JSON.stringify(cfg, null, 2), 'utf-8')
 
-        xp.sendMessage(chat.id, { text: `@${target} berhasil ditambahkan`, mentions: [targetRaw] }, { quoted: m })
+        xp.sendMessage(chat.id, { text: `@${target} berhasil ditambahkan`, mentions: [trgRaw] }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
         call(xp, e, m)
@@ -67,20 +106,19 @@ export default function owner(ev) {
       try {
         if (!chat.group) return xp.sendMessage(chat.id, { text: 'perintah ini hanya bisa digunakan digrup' }, { quoted: m })
 
-        const quoted = m.message?.extendedTextMessage?.contextInfo,
-              target = quoted?.participant || quoted?.mentionedJid?.[0]
+        const target = chat.quoted.id?.[0]
 
         if (!target) return xp.sendMessage(chat.id, { text: `reply/tag target\ncontoh: ${prefix}${cmd} @pengguna/reply 10000` }, { quoted: m })
 
-        const userDb = Object.values(db().key).find(u => u.jid === target),
+        const usr = get.db(target),
               nominal = Number(args[1]) || Number(args[0]),
               mention = target.replace(/@s\.whatsapp\.net$/, '')
 
         if (!nominal || nominal < 1) return xp.sendMessage(chat.id, { text: 'nominal tidak valid' }, { quoted: m })
 
-        if (!userDb) return xp.sendMessage(chat.id, { text: 'pengguna belum terdaftar' }, { quoted: m })
+        if (!usr) return xp.sendMessage(chat.id, { text: 'pengguna belum terdaftar' }, { quoted: m })
 
-        userDb.moneyDb.moneyInBank += nominal
+        usr.moneyDb.moneyInBank += nominal
         save.db()
 
         await xp.sendMessage(chat.id, { text: `Rp ${nominal.toLocaleString('id-ID')} berhasil ditambahkan ke bank @${mention}`, mentions: [target] }, { quoted: m })
@@ -170,18 +208,17 @@ export default function owner(ev) {
       cmd
     }) => {
       try {
-        const ctx = m.message?.extendedTextMessage?.contextInfo,
-              nomor = global.number(args.join(' ')) + '@s.whatsapp.net',
-              target = ctx?.mentionedJid?.[0] || ctx?.participant || nomor,
-              userdb = Object.values(db().key).find(u => u.jid === target)
+        const nomor = global.number(args.join(' ')) + '@s.whatsapp.net',
+              target = chat.quoted.id?.[0] || nomor,
+              usr = get.db(target)
 
-        if (!target || !userdb) return xp.sendMessage(chat.id, { text: !target ? 'reply/tag atau input nomor' : 'nomor belum terdaftar' }, { quoted: m })
+        if (!target || !usr) return xp.sendMessage(chat.id, { text: !target ? 'reply/tag atau input nomor' : 'nomor belum terdaftar' }, { quoted: m })
 
-        const opsi = !!userdb?.ban
+        const opsi = !!usr?.ban
 
         if ((target && opsi)) return xp.sendMessage(chat.id, { text: 'nomor sudah diban' }, { quoted: m })
 
-        userdb.ban = !0
+        usr.ban = !0
         save.db()
 
         await xp.sendMessage(chat.id, { text: `${target.replace(/@s\.whatsapp\.net$/, '')} diban` }, { quoted: m })
@@ -208,7 +245,7 @@ export default function owner(ev) {
       prefix
     }) => {
       try {
-        const gc = getGc(chat)
+        const gc = get.gc(chat.id)
 
         if (!chat.group || !gc || (chat.id && !!gc?.ban)) {
           return xp.sendMessage(chat.id, { text: !chat.group ? 'perintah ini hanya bisa digunakan digrup' : !gc ? `grup ini belum terdaftar ketik ${prefix}daftargc` : 'grup ini sudah diban' }, { quoted: m })
@@ -273,10 +310,9 @@ export default function owner(ev) {
       cmd
     }) => {
       try {
-        const quoted = m.message?.extendedTextMessage?.contextInfo,
-              target = args[0]
+        const target = args[0]
                 ? await global.number(args[0])
-                : (quoted?.mentionedJid?.[0] || quoted?.participant)?.replace(/@s\.whatsapp\.net$/, '');
+                : (chat.quoted.id?.[0])?.replace(/@s\.whatsapp\.net$/, '');
 
         if (!target) return xp.sendMessage(chat.id, { text: 'reply/tag/masukan nomor nya' }, { quoted: m })
 
@@ -284,14 +320,11 @@ export default function owner(ev) {
               list = cfg.ownerSetting?.ownerNumber || [],
               index = list.indexOf(target)
 
-        if (index < 0) {
-          return xp.sendMessage(chat.id, { text: 'nomor tidak terdaftar' }, { quoted: m })
-        }
+        if (index < 0) return xp.sendMessage(chat.id, { text: 'nomor tidak terdaftar' }, { quoted: m })
 
         list.splice(index, 1)
         fs.writeFileSync(config, JSON.stringify(cfg, null, 2), 'utf-8')
         await xp.sendMessage(chat.id, { text: `${target} berhasil dihapus` }, { quoted: m })
-
       } catch (e) {
         err(`error pada ${cmd}`, e)
         call(xp, e, m)
@@ -316,23 +349,20 @@ export default function owner(ev) {
       prefix
     }) => {
       try {
-        const quoted = m.message?.extendedTextMessage?.contextInfo,
-              user = quoted?.participant || quoted?.mentionedJid?.[0]
+        const target = chat.quoted.id?.[0]
 
-        if (!chat.group || !user) {
-          return xp.sendMessage(chat.id, { text: !chat.group ? 'perintah ini hanya bisa digunakan digrup' : 'reply/tag target' }, { quoted: m })
-        }
+        if (!chat.group || !target) return xp.sendMessage(chat.id, { text: !chat.group ? 'perintah ini hanya bisa digunakan digrup' : 'reply/tag target' }, { quoted: m })
 
-        const userDb = Object.values(db().key).find(u => u.jid === user),
+        const usr = get.db(target),
               nominal = Number(args[1]) || Number(args[0])
 
-        if (!nominal || !userDb) {
+        if (!nominal || !usr) {
           return xp.sendMessage(chat.id, { text: !nominal ? `nominal tidak valid\ncontoh: ${prefix}${cmd} 10000` : 'pengguna belum terdaftar' }, { quoted: m })
         }
 
-        if (userDb.moneyDb?.money < nominal) return xp.sendMessage(chat.id, { text: `uang pengguna tersisa ${userDb?.moneyDb?.money.toLocaleString('id-ID')}` }, { quoted: m })
+        if (usr.moneyDb?.money < nominal) return xp.sendMessage(chat.id, { text: `uang pengguna tersisa ${usr?.moneyDb?.money.toLocaleString('id-ID')}` }, { quoted: m })
 
-        userDb.moneyDb.money -= nominal
+        usr.moneyDb.money -= nominal
         save.db()
 
         await xp.sendMessage(chat.id, { text: `Rp ${nominal.toLocaleString('id-ID')} berhasil disita` }, { quoted: m })
@@ -477,9 +507,7 @@ export default function owner(ev) {
       cmd
     }) => {
       try {
-        const usr = Object.values(db().key).find(u => u.jid === chat.sender)
-
-        if (!usr) return xp.sendMessage(chat.id, { text: 'kamu belum terdaftar, ulangi' }, { quoted: m })
+        if (!get.db(chat.sender)) return xp.sendMessage(chat.id, { text: 'kamu belum terdaftar, ulangi' }, { quoted: m })
 
         await xp.sendMessage(chat.id, { react: { text: '⏳', key: m.key } })
         let txt = `Cara memasang bot/menjadi bot\n\n`
@@ -608,18 +636,17 @@ export default function owner(ev) {
       cmd
     }) => {
       try {
-        const ctx = m.message?.extendedTextMessage?.contextInfo,
-              nomor = global.number(args.join(' ')) + '@s.whatsapp.net',
-              target = ctx?.mentionedJid?.[0] || ctx?.participant || nomor,
-              userdb = Object.values(db().key).find(u => u.jid === target)
+        const nomor = global.number(args.join(' ')) + '@s.whatsapp.net',
+              target = chat.quoted.id?.[0] || nomor,
+              usr = get.db(target)
 
-        if (!target || !userdb) return xp.sendMessage(chat.id, { text: !target ? 'reply/tag atau input nomor' : 'nomor belum terdaftar' }, { quoted: m })
+        if (!target || !usr) return xp.sendMessage(chat.id, { text: !target ? 'reply/tag atau input nomor' : 'nomor belum terdaftar' }, { quoted: m })
 
-        const opsi = !!userdb?.ban
+        const opsi = !!usr?.ban
 
         if ((target && !opsi)) return xp.sendMessage(chat.id, { text: 'nomor tidak diban' }, { quoted: m })
 
-        userdb.ban = !1
+        usr.ban = !1
         save.db()
         await xp.sendMessage(chat.id, { text: `${target.replace(/@s\.whatsapp\.net$/, '')} diunban` }, { quoted: m })
       } catch (e) {
@@ -645,7 +672,7 @@ export default function owner(ev) {
       prefix
     }) => {
       try {
-        const gc = getGc(chat)
+        const gc = get.gc(chat.id)
 
         if (!chat.group || !gc || !gc?.ban) {
           return xp.sendMessage(chat.id, { text: !chat.group ? 'perintah ini hanya bisa digunakan digrup' : !gc ? `grup ini belum terdaftar ketik ${prefix}daftargc untuk mendaftar`: 'grup ini tidak diban' }, { quoted: m })
@@ -684,7 +711,7 @@ export default function owner(ev) {
               cfg = JSON.parse(fs.readFileSync(config, 'utf-8')),
               input = arg === 'on'
 
-        if (!['on', 'off'].includes(arg)) return xp.sendMessage(chat.id, { text: `gunakan: ${prefix}${cmd} on/off\n\nstatus: ${global.public}` }, { quoted: m })
+        if (!['on', 'off'].includes(arg)) return xp.sendMessage(chat.id, { text: `gunakan: ${prefix}${cmd} on/off\n\nstatus: ${global.public ? 'Aktif' : 'Tidak Aktif'}` }, { quoted: m })
 
         cfg.ownerSetting.public = input
         fs.writeFileSync(config, JSON.stringify(cfg, null, 2))
@@ -744,13 +771,12 @@ export default function owner(ev) {
       cmd
     }) => {
       try {
-        const quoted = m.message?.extendedTextMessage?.contextInfo,
-              user = quoted?.participant || quoted?.mentionedJid?.[0],
+        const user = chat.quoted.id?.[0],
               raw = args && args[0] ? args[0] : null,
               num = raw ? global.number(raw) : null,
               target = user || num || chat.sender
 
-        const usr = Object.values(db().key).find(u => u.jid === target)
+        const usr = get.db(target)
 
         if (!usr) return
 

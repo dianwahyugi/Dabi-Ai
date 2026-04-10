@@ -21,18 +21,19 @@ export default function fun(ev) {
       try {
         const nama = args.join(' ')
 
-        if (!nama) return xp.sendMessage(chat.id, { text: `masukan nama contoh:\n${prefix}${cmd}` }, { quoted: m })
+        if (!nama) return xp.sendMessage(chat.id, { text: `masukan nama contoh:\n${prefix}${cmd} ${botName}` }, { quoted: m })
 
-        const url = await fetch(`https://api.ureshii.my.id/api/primbon/arti-nama?nama=${encodeURIComponent(nama)}`).then(r => r.json())
+        const text = `jelaskan arti nama ${nama}. Ingat, nama orang`,
+              url = await fetch(`${termaiWeb}/api/chat/bard?query=${encodeURIComponent(text)}&key=${termaiKey}`).then(r => r.json())
 
-        if (!url.info?.status) return xp.sendMessage(chat.id, { text: 'status api false' }, { quoted: m })
+        if (!url.status) return xp.sendMessage(chat.id, { text: 'status api false' }, { quoted: m })
 
         let txt = `${head}${opb} *A R T I  N A M A* ${clb}\n`
-            txt += `${body} ${btn} *Nama:* ${url?.nama}\n`
+            txt += `${body} ${btn} *Nama:* ${nama}\n`
             txt += `${body} ${btn} *Arti Nama:*\n`
             txt += `${foot}${line}\n`
             txt += `${readmore}\n`
-            txt += `${url?.arti}`
+            txt += `${url?.chatUi}`
 
         await xp.sendMessage(chat.id, { text: txt }, { quoted: m })
       } catch (e) {
@@ -57,8 +58,7 @@ export default function fun(ev) {
       cmd
     }) => {
       try {
-        const quoted = m.message?.extendedTextMessage?.contextInfo,
-              user = quoted?.participant || quoted?.mentionedJid?.[0] || m.key?.participant || chat.id,
+        const user = chat.quoted.id?.[0] || chat.sender,
               target = user.replace(/@s\.whatsapp\.net$/, ''),
               persen = Math.floor(Math.random() * 101)
 
@@ -93,20 +93,16 @@ export default function fun(ev) {
       cmd
     }) => {
       try {
-        const quoted = m.message?.extendedTextMessage?.contextInfo,
-              target = quoted?.participant || quoted?.mentionedJid?.[0] || chat.sender,
-              user = target || m.key?.participant,
-              getUser = Object.values(db().key).find(u => u.jid === user)
+        const q = chat.quoted.id?.[0] || chat.sender,
+              usr = get.db(q)
 
+        if (!usr) return xp.sendMessage(chat.id, { text: 'pengguna belum terdaftar di database' }, { quoted: m })
 
-        if (!getUser) return xp.sendMessage(chat.id, { text: 'pengguna belum terdaftar di database' }, { quoted: m })
+        const mny = usr?.moneyDb?.money ?? 0,
+              fmny = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR'}).format(mny),
+              txt = `Hasil investigasi dari dompet @${chat.sender.replace(/@s\.whatsapp\.net$/, '')}\n${fmny} ditemukan`
 
-        const moneyDb = getUser?.moneyDb?.money ?? 0,
-              mention = user.replace(/@s\.whatsapp\.net$/, ''),
-              fmtMoney = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR'}).format(moneyDb),
-              txt = `Hasil investigasi dari dompet @${mention}\n${fmtMoney} ditemukan`
-
-        await xp.sendMessage(chat.id, { text: txt, mentions: [user] }, { quoted: m })
+        await xp.sendMessage(chat.id, { text: txt, mentions: [usr.jid] }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
         call(xp, e, m)
@@ -129,16 +125,15 @@ export default function fun(ev) {
       cmd
     }) => {
       try {
-        const quoted = m.message?.extendedTextMessage?.contextInfo,
-              target = quoted?.participant || quoted?.mentionedJid?.[0] || chat.sender,
+        const q = chat.quoted.id?.[0] || chat.sender,
               { cekDosa } = await global.func(),
               listDosa = [...cekDosa].sort(() => Math.random() - .5).slice(0, 10),
-              user = target.replace(/@s\.whatsapp\.net$/, '')
+              user = q.replace(/@s\.whatsapp\.net$/, '')
 
         let teks = `Top 10 dosa besar @${user}\n`
         listDosa.forEach((d, i) => teks += `${i + 1}. ${d}\n`)
 
-        await xp.sendMessage(chat.id, { text: teks.trim(), mentions: [target] }, { quoted: m })
+        await xp.sendMessage(chat.id, { text: teks.trim(), mentions: [q] }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
         call(xp, e, m)
@@ -161,8 +156,7 @@ export default function fun(ev) {
       cmd
     }) => {
       try {
-        const quoted = m.message?.extendedTextMessage?.contextInfo,
-              user = quoted?.participant || quoted?.mentionedJid?.[0] || chat.sender,
+        const user = chat.quoted.id?.[0] || chat.sender,
               target = user.replace(/@s\.whatsapp\.net$/, ''),
               persen = Math.floor(Math.random() * 101)
 
@@ -175,7 +169,6 @@ export default function fun(ev) {
             teks = `@${target} ${persen}% ${txt}`
 
         await xp.sendMessage(chat.id, { text: teks, mentions: [user] }, { quoted: m })
-
       } catch (e) {
         err(`error pada ${cmd}`, e)
         call(xp, e, m)
@@ -198,8 +191,7 @@ export default function fun(ev) {
       cmd
     }) => {
       try {
-        const quoted = m.message?.extendedTextMessage?.contextInfo,
-              user = quoted?.participant || quoted?.mentionedJid?.[0] || chat.sender,
+        const user = chat.quoted.id?.[0] || chat.sender,
               target = user.replace(/@s\.whatsapp\.net$/, ''),
               persen = Math.floor(Math.random() * 101)
 
@@ -234,8 +226,7 @@ export default function fun(ev) {
       cmd
     }) => {
       try {
-        const quoted = m.message?.extendedTextMessage?.contextInfo,
-              user = quoted?.participant || quoted?.mentionedJid?.[0] || chat.sender,
+        const user = chat.quoted.id?.[0] || chat.sender,
               target = user.replace(/@s\.whatsapp\.net$/, ''),
               rand = Math.floor(Math.random() * 3.4e1) + 7.4e1,
               persen = rand <= 81 ? 81 : rand <= 87 ? 87 : rand <= 94 ? 94 : rand <= 100 ? 100 : 107,
@@ -271,19 +262,15 @@ export default function fun(ev) {
       try {
         if (!chat.group) return xp.sendMessage(chat.id, { text: 'fitur ini hanya bisa digunakan di grup' }, { quoted: m })
 
-        const quoted = m.message?.extendedTextMessage?.contextInfo,
-              tags = quoted?.mentionedJid || [],
-              reply = quoted?.participant,
-              user = m.key?.participant,
+        const usr = chat.quoted.id,
               metadata = groupCache.get(chat.id) || await xp.groupMetadata(chat.id)
 
         if (!metadata) throw new Error('gagal mengambil metadata')
 
         const target = metadata.participants.map(v => v.id).filter(id => id !== xp.user.id)
 
-        const mention = tags.length >= 2 ? tags
-                      : tags.length === 1 ? [tags[0]]
-                      : reply ? [reply]
+        const mention = Array.isArray(usr) ? usr
+                      : usr ? [usr]
                       : []
 
         const persen = (Math.floor(Math.random() * 1e2) + 1),
@@ -330,8 +317,7 @@ export default function fun(ev) {
       cmd
     }) => {
       try {
-        const quoted = m.message?.extendedTextMessage?.contextInfo,
-              user = quoted?.participant || quoted?.mentionedJid?.[0] || chat.sender,
+        const user = chat.quoted.id?.[0] || chat.sender,
               target = user.replace(/@s\.whatsapp\.net$/, ''),
               persen = Math.floor(Math.random() * 101)
 
@@ -344,7 +330,6 @@ export default function fun(ev) {
             teks = `@${target} ${persen}% ${txt}`
 
         await xp.sendMessage(chat.id, { text: teks, mentions: [user] }, { quoted: m })
-
       } catch (e) {
         err(`error pada ${cmd}`, e)
         call(xp, e, m)
@@ -367,8 +352,7 @@ export default function fun(ev) {
       cmd
     }) => {
       try {
-        const quoted = m.message?.extendedTextMessage?.contextInfo,
-              user = quoted?.participant || quoted?.mentionedJid?.[0] || chat.sender,
+        const user = chat.quoted.id?.[0] || chat.sender,
               target = user.replace(/@s\.whatsapp\.net$/, ''),
               persen = Math.floor(Math.random() * 101)
 
@@ -390,7 +374,7 @@ export default function fun(ev) {
 
   ev.on({
     name: 'cek mesum',
-    cmd: ['cekmesum'],
+    cmd: ['cekmesum', 'ceksange', 'cekcabul'],
     tags: 'Fun Menu',
     desc: 'cek seberapa mesum orang',
     owner: !1,
@@ -403,16 +387,15 @@ export default function fun(ev) {
       cmd
     }) => {
       try {
-        const quoted = m.message?.extendedTextMessage?.contextInfo,
-              target = quoted?.participant || quoted?.mentionedJid?.[0] || chat.sender,
-              user = target || m.key?.participant,
+        const user = chat.quoted.id?.[0] || chat.sender,
               mention = user.replace(/@s\.whatsapp\.net$/, ''),
               persen = Math.floor(Math.random() * 101)
 
         let txt = persen <= 17 ? 'masih aman' :
                   persen <= 34 ? 'agak agak sih' :
                   persen <= 51 ? 'mencurigakan' :
-                  persen <= 67 ? 'cabul banget jir' :
+                  persen <= 67 ? `cabul banget jir` :
+                  persen <= 71 ? 'sange banget ni orang' :
                   persen <= 84 ? 'dasar mesum' :
                   persen <= 93 ? 'fiks cabul' : 'orang gila',
             teks = `@${mention} ${persen}% ${txt}`
@@ -440,8 +423,7 @@ export default function fun(ev) {
       cmd
     }) => {
       try {
-        const quoted = m.message?.extendedTextMessage?.contextInfo,
-              user = quoted?.participant || quoted?.mentionedJid?.[0] || chat.sender,
+        const user = chat.quoted.id?.[0] || chat.sender,
               target = user.replace(/@s\.whatsapp\.net$/, ''),
               persen = Math.floor(Math.random() * 101)
 
@@ -476,8 +458,7 @@ export default function fun(ev) {
       cmd
     }) => {
       try {
-        const quoted = m.message?.extendedTextMessage?.contextInfo,
-              user = quoted?.participant || quoted?.mentionedJid?.[0] || chat.sender,
+        const user = chat.quoted.id?.[0] || chat.sender,
               { sifatList } = await global.func(),
               target = user.replace(/@s\.whatsapp\.net$/, '')
 
@@ -511,12 +492,11 @@ export default function fun(ev) {
       try {
          if (!chat.group) return xp.sendMessage(chat.id, { text: 'perintah ini hanya bisa digunakan digrup' }, { quoted: m })
 
-          const q = m.message?.extendedTextMessage?.contextInfo,
-                target = q?.participant || q?.mentionedJid?.[0]
+          const q = chat.quoted.id?.[0]
 
-          if (!target) return xp.sendMessage(chat.id, { text: `reply atau tag target` }, { quoted: m })
+          if (!q) return xp.sendMessage(chat.id, { text: `reply atau tag target` }, { quoted: m })
 
-          await xp.sendMessage(chat.id, { text: `@${target.replace(/@s\.whatsapp\.net$/, '')} telah di claim oleh @${chat.sender.replace(/@s\.whatsapp\.net$/, '')} `, mentions: [target, chat.sender] }, { quoted: m })
+          await xp.sendMessage(chat.id, { text: `@${q.replace(/@s\.whatsapp\.net$/, '')} telah di claim oleh @${chat.sender.replace(/@s\.whatsapp\.net$/, '')} `, mentions: [q, chat.sender] }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
         call(xp, e, m)
@@ -526,7 +506,7 @@ export default function fun(ev) {
 
   ev.on({
     name: 'elevenlabs',
-    cmd: ['elevenlabs'],
+    cmd: ['elevenlabs', 'vn'],
     tags: 'Fun Menu',
     desc: 'text to speech elevenlabs',
     owner: !1,
@@ -583,6 +563,39 @@ export default function fun(ev) {
 
         const audio = Buffer.from(await url.arrayBuffer())
         await vn(xp, audio, m)
+      } catch (e) {
+        err(`error pada ${cmd}`, e)
+        call(xp, e, m)
+      }
+    }
+  })
+
+  ev.on({
+    name: 'get contact',
+    cmd: ['getcontact', 'contact', 'contactme'],
+    tags: 'Fun Menu',
+    desc: 'membuat pesan contact',
+    owner: !1,
+    prefix: !0,
+    money: 100,
+    exp: 0.1,
+  
+    run: async (xp, m, {
+      args,
+      chat,
+      cmd,
+      prefix
+    }) => {
+      try {
+        const name = args?.[0] || chat.pushName,
+              num = chat.sender.split('@')[0]
+
+        await xp.sendMessage(chat.id, {
+          contacts: {
+            displayName: name,
+            contacts: [{ vcard: `BEGIN:VCARD\nVERSION:3.0\nFN:${name}\nTEL;type=CELL;waid=${num}:${num}\nEND:VCARD` }]
+          }
+        }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
         call(xp, e, m)

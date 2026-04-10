@@ -23,15 +23,15 @@ export default function info(ev) {
       cmd
     }) => {
       try {
-        const user = Object.values(db().key).find(u => u.jid === chat.sender),
+        const usr = get.db(chat.sender),
               reason = args.join(' ') || 'tidak ada alasan',
               time = global.time.timeIndo('Asia/Jakarta', 'DD-MM HH:mm:ss')
 
-        if (!user) return xp.sendMessage(chat.id, { text: 'kamu belum terdaftar, ulangi' }, { quoted: m })
+        if (!usr) return xp.sendMessage(chat.id, { text: 'kamu belum terdaftar, ulangi' }, { quoted: m })
 
-        user.afk.status = !0
-        user.afk.reason = reason
-        user.afk.afkStart = time 
+        usr.afk.status = !0
+        usr.afk.reason = reason
+        usr.afk.afkStart = time 
         save.db()
 
         await xp.sendMessage(chat.id, { text: `Kamu memulai afk\ndengan alasan: ${reason}` }, { quoted: m })
@@ -110,7 +110,7 @@ export default function info(ev) {
       prefix
     }) => {
       try {
-        const gcData = getGc(chat),
+        const gcData = get.gc(chat.id),
               metadata = groupCache.get(chat.id),
               name = metadata.subject,
               member = metadata.participants.length,
@@ -134,6 +134,7 @@ export default function info(ev) {
             txt += `${body} ${btn} *Anti Link: ${gcData?.filter?.antilink ? 'Aktif' : 'Tidak'}*\n`
             txt += `${body} ${btn} *Anti TagSw: ${gcData?.filter?.antitagsw ? 'Aktif' : 'Tidak'}*\n`
             txt += `${body} ${btn} *Anti Tag All: ${gcData?.filter?.antitagall ? 'Aktif' : 'Tidak'}*\n`
+            txt += `${body} ${btn} *Auto Back: ${gcData?.filter?.autoback ? 'Aktif' : 'Tidak'}*\n`
             txt += `${body} ${btn} *Mute: ${gcData?.filter?.mute ? 'Aktif' : 'Tidak'}*\n`
             txt += `${body} ${btn} *Leave: ${gcData?.filter?.left?.leftGc ? 'Aktif' : 'Tidak'}*\n`
             txt += `${body} ${btn} *Welcome: ${gcData?.filter?.welcome?.welcomeGc ? 'Aktif' : 'Tidak'}*\n`
@@ -285,7 +286,7 @@ export default function info(ev) {
       prefix
     }) => {
       try {
-        const usr = Object.values(db().key).find(u => u.jid === chat.sender),
+        const usr = get.db(chat.sender),
               data = Object.values(db().key),
               Format = n => n.toLocaleString('id-ID')
 
@@ -335,9 +336,7 @@ export default function info(ev) {
           txt += `   ${ocrs}: ${Format(v.total)}\n\n`
         })
 
-        xp.sendMessage(chat.id,{
-          text: txt
-        },{ quoted: m })
+        xp.sendMessage(chat.id,{ text: txt },{ quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
         call(xp, e, m)
@@ -534,61 +533,46 @@ export default function info(ev) {
       cmd
     }) => {
       try {
-        const data = Object.values(db().key).find(u => u.jid === chat.sender),
+        const usr = get.db(chat.sender),
               base64 = v => Buffer.from(v).toString('base64'),
               defThumb = 'https://c.termai.cc/i0/7DbG.jpg',
               type = v => v ? 'Aktif' : 'Tidak'
 
-        if (!data) return xp.sendMessage(chat.id, { text: 'kamu belum terdaftar, ulangi' }, { quoted: m })
+        if (!usr) return xp.sendMessage(chat.id, { text: 'kamu belum terdaftar, ulangi' }, { quoted: m })
 
         let thumb
         try { thumb = await xp.profilePictureUrl(chat.sender, 'image') }
         catch { thumb = defThumb }
 
-        const name = chat.pushName || m.pushName,
-              nomor = data.jid,
-              noId = base64(data.noId),
-              cmd = data.cmd,
-              ban = type(data.ban),
-              ai = type(data.ai?.bell),
-              farm = type(data?.game?.farm),
-              chatAi = data.ai.chat,
-              role = data.ai.role,
-              acc = data.acc,
-              money = data.moneyDb?.money.toLocaleString('id-ID'),
-              moneyInBank = data.moneyDb?.moneyInBank.toLocaleString('id-ID'),
-              exp = data.exp || 0,
-              level = ((exp + 10) / 10).toFixed(1),
-              cost = data.game.robbery.cost
-
         let txt = `${head} ${opb} *P R O F I L E* ${clb}\n`
-            txt += `${body} ${btn} *Nama:* ${name}\n`
-            txt += `${body} ${btn} *Nomor:* ${nomor}\n`
-            txt += `${body} ${btn} *No ID:* ${noId}\n`
-            txt += `${body} ${btn} *Cmd:* ${cmd}\n`
-            txt += `${body} ${btn} *Ban:* ${ban}\n`
-            txt += `${body} ${btn} *Acc:* ${acc}\n`
+            txt += `${body} ${btn} *Nama:* ${chat.pushName}\n`
+            txt += `${body} ${btn} *Nomor:* ${usr.jid}\n`
+            txt += `${body} ${btn} *No ID:* ${base64(usr.noId)}\n`
+            txt += `${body} ${btn} *Cmd:* ${usr.cmd}\n`
+            txt += `${body} ${btn} *Ban:* ${type(usr.ban)}\n`
+            txt += `${body} ${btn} *Acc:* ${usr.acc}\n`
             txt += `${foot}${line}\n\n`
             txt += `${readmore}`
             txt += `${head} ${opb} *A I* ${clb}\n`
-            txt += `${body} ${btn} *Ai:* ${ai}\n`
-            txt += `${body} ${btn} *Chat Ai:* ${chatAi}\n`
-            txt += `${body} ${btn} *Role:* ${role}\n`
+            txt += `${body} ${btn} *Ai:* ${type(usr.ai?.bell)}\n`
+            txt += `${body} ${btn} *Chat Ai:* ${usr.ai.chat}\n`
+            txt += `${body} ${btn} *Role:* ${usr.ai.role}\n`
             txt += `${foot}${line}\n\n`
             txt += `${head} ${opb} *G A M E* ${clb}\n`
-            txt += `${body} ${btn} *Money:* Rp ${money}\n`
-            txt += `${body} ${btn} *Uang Di Bank:* Rp ${moneyInBank}\n`
-            txt += `${body} ${btn} *Level:* ${level}\n`
-            txt += `${body} ${btn} *Auto Farm:* ${farm}\n`
-            txt += `${body} ${btn} *Kesempatan Rampok:* ${cost}\n`
+            txt += `${body} ${btn} *Status Terbunuh:* ${usr.game.kill.status ? 'Terbunuh' : 'Tidak Terbunuh'}\n`
+            txt += `${body} ${btn} *List Kill:* ${usr.game.kill.target}\n`
+            txt += `${body} ${btn} *Money:* Rp ${usr.moneyDb.money.toLocaleString('id-ID')}\n`
+            txt += `${body} ${btn} *Uang Di Bank:* Rp ${usr.moneyDb.moneyInBank.toLocaleString('id-ID')}\n`
+            txt += `${body} ${btn} *Level:* ${((usr.exp + 10) / 10).toFixed(1)}\n`
+            txt += `${body} ${btn} *Auto Farm:* ${type(usr.game.farm)}\n`
+            txt += `${body} ${btn} *Kesempatan Rampok:* ${usr.game.robbery.cost}\n`
             txt += `${foot}${line}`
-
 
         await xp.sendMessage(chat.id, {
           text: txt,
           contextInfo: {
             externalAdReply: {
-              body: `ini profile ${name}`,
+              body: `ini profile ${chat.pushName}`,
               thumbnailUrl: thumb,
               mediaType: 1,
               renderLargerThumbnail: !0
@@ -679,6 +663,47 @@ export default function info(ev) {
             }
           }
         }, { quoted: m })
+      } catch (e) {
+        err(`error pada ${cmd}`, e)
+        call(xp, e, m)
+      }
+    }
+  })
+
+  ev.on({
+    name: 'total fitur',
+    cmd: ['totalfitur', 'allfitur'],
+    tags: 'Info Menu',
+    desc: 'list jumlah fitur',
+    owner: !1,
+    prefix: !0,
+    money: 100,
+    exp: 0.1,
+
+    run: async (xp, m, {
+      chat,
+      cmd,
+      prefix
+    }) => {
+      try {
+        const tags = {}
+
+        for (const c of ev.cmd) {
+          const tag = c.tags || 'Other'
+          tags[tag] ??= 0
+          tags[tag]++
+        }
+
+        const cmdAll = ev.cmd?.length,
+              tagAll = Object.keys(tags).length,
+              usr = get.db(chat.sender)
+
+        let txt = `*All Cmd: ${cmdAll}*\n`
+            txt += `*All Tags: ${tagAll}*\n\n`
+            txt += `*Cmd ${chat.pushName}: ${usr.cmd}*`
+  
+        await xp.sendMessage(chat.id, { text: txt }, { quoted: m })
+
       } catch (e) {
         err(`error pada ${cmd}`, e)
         call(xp, e, m)

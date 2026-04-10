@@ -21,7 +21,7 @@ export default function game(ev) {
     }) => {
       try {
         const input = args[0]?.toLowerCase(),
-              user = Object.values(db().key).find(u => u.jid === chat.sender),
+              user = get.db(chat.sender),
               opsi = !!user?.game?.farm,
               type = v => v ? 'Aktif' : 'Tidak',
               modefarm = type(user?.game?.farm)
@@ -34,6 +34,92 @@ export default function game(ev) {
         save.db()
 
         await xp.sendMessage(chat.id, { text: `${cmd} berhasil di-${input === 'on' ? 'aktifkan' : 'nonaktifkan'}` }, { quoted: m })
+      } catch (e) {
+        err(`error pada ${cmd}`, e)
+        call(xp, e, m)
+      }
+    }
+  })
+
+  ev.on({
+    name: 'bunuh',
+    cmd: ['bunuh', 'kill'],
+    tags: 'Game Menu',
+    desc: 'membunuh orang',
+    owner: !1,
+    prefix: !0,
+    money: 100,
+    exp: 0.1,
+
+    run: async (xp, m, {
+      chat,
+      cmd
+    }) => {
+      try {
+        if (!chat.group) return xp.sendMessage(chat.id, { text: 'perintah ini hanya bisa digunakan digrup' }, { quoted: m })
+
+        const target = chat.quoted.id?.[0]
+        if (!target) return xp.sendMessage(chat.id, { text: 'reply/tag target' }, { quoted: m })
+
+        const usr = get.db(chat.sender),
+              trg = get.db(target)
+
+        if (!trg) return xp.sendMessage(chat.id, { text: `${target?.replace(/@s\.whatsapp\.net$/, '') || 'target'} belum terdaftar` }, { quoted: m })
+
+        !usr.game ? usr.game = {} : 0
+        !trg.game ? trg.game = {} : 0
+
+        !usr.game.kill ? usr.game.kill = { status: !1, reset: 0 } : 0
+        !trg.game.kill ? trg.game.kill = { status: !1, reset: 0 } : 0
+
+        const now = Date.now(),
+              cd = 8.64e7
+
+        if (usr.game.kill.status || !1) return xp.sendMessage(chat.id, { text: 'kamu sudah mati' }, { quoted: m })
+        if (trg.game.kill.status || !1) return xp.sendMessage(chat.id, { text: 'target sudah mati' }, { quoted: m })
+
+        if (usr.game.kill.reset && now - usr.game.kill.reset < cd) {
+          const sisa = cd - (now - usr.game.kill.reset)
+          return xp.sendMessage(chat.id, { text: `tunggu ${Math.ceil(sisa / 3.6e6)} jam lagi untuk kill lagi` }, { quoted: m })
+        }
+
+        const lvlUsr = Math.max(1, Math.floor(usr.exp || 1)),
+              lvlTrg = Math.max(1, Math.floor(trg.exp || 1)),
+              chance = Math.max(1, Math.min(100, Math.floor((lvlUsr / (lvlUsr + lvlTrg)) * 100))),
+              roll = Math.floor(Math.random() * 100) + 1
+
+        if (roll <= chance || !1) {
+          const percent = chance / 100,
+                takeExp = Math.floor(lvlTrg * percent),
+                takeMoney = Math.floor((trg.moneyDb?.money || 0) * percent)
+
+          trg.exp -= takeExp
+          usr.exp += takeExp
+
+          trg.moneyDb.money -= takeMoney
+          usr.moneyDb.money += takeMoney
+
+          trg.game.kill.status = !0
+          usr.game.kill.reset = now
+          usr.game.kill.target = (usr.game.kill.target ?? 0) + 1
+
+          return xp.sendMessage(chat.id, { text: `berhasil membunuh target!\n\npeluang: ${chance}%\nexp target: -${takeExp}\nexp kamu: +${takeExp}\nuang: +${takeMoney}` }, { quoted: m })
+        } else {
+          const percent = chance / 100,
+                takeExp = Math.floor(lvlUsr * percent),
+                takeMoney = Math.floor((usr.moneyDb?.money || 0) * percent)
+
+          usr.exp -= takeExp
+          trg.exp += takeExp
+
+          usr.moneyDb.money -= takeMoney
+          trg.moneyDb.money += takeMoney
+
+          usr.game.kill.status = !0
+          usr.game.kill.reset = now
+
+          return xp.sendMessage(chat.id, { text: `gagal membunuh target...\n\n💀 kamu mati\n📉 exp kamu: -${takeExp}\n📈 exp target: +${takeExp}\n💸 uang hilang: ${takeMoney}` }, { quoted: m })
+        }
       } catch (e) {
         err(`error pada ${cmd}`, e)
         call(xp, e, m)
@@ -63,6 +149,7 @@ export default function game(ev) {
             txt += `${line}\n`
             txt += `Akun: Bank Pusat\n`
             txt += `Saldo: Rp ${saldo.toLocaleString('id-ID')}\n`
+            txt += `Pajak: ${bankDb?.key?.tax}\n`
             txt += `${line}`
 
         await xp.sendMessage(chat.id, { text: txt }, { quoted: m })
@@ -91,17 +178,17 @@ export default function game(ev) {
       try {
         if (!args) return xp.sendMessage(chat.id, { text: 'contoh: .isiatm 10000' }, { quoted: m })
 
-        const userDb = Object.values(db().key).find(u => u.jid === chat.sender),
+        const usr = get.db(chat.sender),
               nominal = Number(args[0])
 
-        if (!userDb || !nominal) {
-          return xp.sendMessage(chat.id, { text: !userDb ? 'kamu belum terdaftar coba lagi' : 'nominal tidak valid\ncontoh: .isiatm 10000' }, { quoted: m })
+        if (!usr || !nominal) {
+          return xp.sendMessage(chat.id, { text: !usr ? 'kamu belum terdaftar coba lagi' : 'nominal tidak valid\ncontoh: .isiatm 10000' }, { quoted: m })
         }
 
-        if (userDb.moneyDb?.money < nominal) return xp.sendMessage(chat.id, { text: `uang kamu hanya tersisa ${userDb.moneyDb?.money.toLocaleString('id-ID')}` }, { quoted: m })
+        if (usr.moneyDb?.money < nominal) return xp.sendMessage(chat.id, { text: `uang kamu hanya tersisa ${usr.moneyDb?.money.toLocaleString('id-ID')}` }, { quoted: m })
 
-        userDb.moneyDb.money -= nominal
-        userDb.moneyDb.moneyInBank += nominal
+        usr.moneyDb.money -= nominal
+        usr.moneyDb.moneyInBank += nominal
         save.db()
 
         await xp.sendMessage(chat.id, { text: `Rp ${nominal.toLocaleString('id-ID')} berhasil masukan ke bank` }, { quoted: m })
@@ -129,18 +216,17 @@ export default function game(ev) {
       try {
         if (!chat.group) return xp.sendMessage(chat.id, { text: 'perintah ini hanya bisa digunakan digrup' }, { quoted: m })
 
-        const quoted = m.message?.extendedTextMessage?.contextInfo,
-              target = quoted?.participant || quoted?.mentionedJid?.[0],
-              targetdb = Object.values(db().key).find(t => t.jid === target),
-              usrdb = Object.values(db().key).find(u => u.jid === chat.sender)
+        const target = chat.quoted.id?.[0],
+              trg = get.db(target),
+              usr = get.db(chat.sender)
 
-        if (!target || !targetdb) return xp.sendMessage(chat.id, { text: !target ? 'reply/tag target' : 'target belum terdaftar' }, { quoted: m })
+        if (!target || !trg) return xp.sendMessage(chat.id, { text: !target ? 'reply/tag target' : 'target belum terdaftar' }, { quoted: m })
 
-        if (usrdb.game?.robbery?.cost <= 0) return xp.sendMessage(chat.id, { text: 'kesempatan merampok habis coba kembali besok' }, { quoted: m })
+        if (usr.game?.robbery?.cost <= 0) return xp.sendMessage(chat.id, { text: 'kesempatan merampok habis coba kembali besok' }, { quoted: m })
 
         const mention = target.replace(/@s\.whatsapp\.net$/, ''),
-              moneyTarget = targetdb.moneyDb.money,
-              moneyUsr = usrdb.moneyDb.money
+              moneyTarget = trg.moneyDb.money,
+              moneyUsr = usr.moneyDb.money
 
         if (target === chat.sender) return
 
@@ -152,23 +238,21 @@ export default function game(ev) {
                 : Math.floor(Math.random() * 21) + 10,
               escapeRoll = Math.floor(Math.random() * 100) + 1
 
-        if (escapeRoll <= escapeChance) {
-          return xp.sendMessage(chat.id, { text: `Target berhasil *lolos!*` }, { quoted: m })
-        }
+        if (escapeRoll <= escapeChance) return xp.sendMessage(chat.id, { text: `Target berhasil *lolos!*` }, { quoted: m })
 
         const persen = chance > 100 ? 100 : chance,
               stolin = Math.floor(moneyTarget * (persen / 100)),
               finalSt = stolin < 1 ? 1 : stolin
 
-        targetdb.moneyDb.money -= finalSt
-        usrdb.moneyDb.money += finalSt
-        usrdb.game.robbery.cost -= 1
+        trg.moneyDb.money -= finalSt
+        usr.moneyDb.money += finalSt
+        usr.game.robbery.cost -= 1
 
         save.db()
 
         let txt = `${head}\n`
             txt += `${body} ${btn} *Berhasil Merampok:* Rp ${finalSt.toLocaleString('id-ID')} dari @${mention}\n`
-            txt += `${body} ${btn} *Saldo Kamu:* Rp ${usrdb.moneyDb?.money.toLocaleString('id-ID')}\n`
+            txt += `${body} ${btn} *Saldo Kamu:* Rp ${usr.moneyDb?.money.toLocaleString('id-ID')}\n`
             txt += `${foot}${line}`
 
         await xp.sendMessage(chat.id, { text: txt, mentions: [target] }, { quoted: m })
@@ -183,48 +267,50 @@ export default function game(ev) {
     name: 'sambung kata',
     cmd: ['sambungkata', 'samkat'],
     tags: 'Game Menu',
-    desc: 'game sambung kata',
+    desc: 'game sambungkata',
     owner: !1,
     prefix: !0,
-    money: 1,
+    money: 10,
     exp: 0.1,
 
     run: async (xp, m, {
+      args,
       chat,
-      cmd
+      cmd,
+      prefix
     }) => {
       try {
-        const { sambungKata } = await global.func(),
-              user = Object.values(db().key).find(u => u.jid === chat.sender),
-              key = Object.values(sambungKata),
-              list = key[Math.floor(Math.random() * key.length)]
+        if (!chat.group) return xp.sendMessage(chat.id, { text: 'perintah ini hanya bisa digunakan digrup' }, { quoted: m })
 
-        const msg = await xp.sendMessage(chat.id, { text: `sambung kata dimulai\nsoal: ${list.soal}\n\nreply chat ini untuk menjawab` }, { quoted: m })
+        const arg = args?.[0],
+              usr = get.db(chat.sender)
 
-        const __sambungKata = path.join(dirname, '../temp/history_sambung_kata.json')
+        if (!arg || !usr) return xp.sendMessage(chat.id, { text: !arg ? `masukan teks nya:\ncontoh: ${prefix}${cmd} ayam` : null }, { quoted: m })
 
-        let history = {}
+        const txt = arg?.slice(-1),
+              hystemp = path.join(dirname, '../temp/sambungkata_hystory.json')
 
-        if (fs.existsSync(__sambungKata)) {
-          history = JSON.parse(fs.readFileSync(__sambungKata, 'utf-8') || '{}')
+        if (!fs.existsSync(hystemp)) fs.writeFileSync(hystemp, '{}')
+
+        let tekka = {}
+
+        if (fs.existsSync(hystemp)) tekka = JSON.parse(fs.readFileSync(hystemp, 'utf-8') || '{}')
+
+        const msg = await xp.sendMessage(chat.id, { text: `sambung kata dimulai dari ${arg}\nbalas chat ini untuk melanjutkan` }, { quoted: m }),
+              values = `${arg}_${chat.sender?.replace(/@s\.whatsapp\.net$/, '') || chat.sender}`
+
+        tekka[values] ??= { reset: Date.now() }
+
+        tekka[values].reset ??= Date.now()
+
+        tekka[values][chat.sender?.replace(/@s\.whatsapp\.net$/, '')] = {
+          id: msg?.key?.id,
+          key: arg,
+          val: txt,
+          time: Date.now()
         }
 
-        history.key ??= {}
-        history.key[chat.sender] ??= {}
-
-        history.key[chat.sender][msg.key.id] = {
-          name: chat.pushName,
-          id: msg.key.id,
-          chat: chat.id,
-          no: user?.noId || chat.sender,
-          soal: list.soal,
-          key: list.jawaban,
-          chance: 3,
-          status: !0,
-          set: Date.now()
-        }
-
-        fs.writeFileSync(__sambungKata, JSON.stringify(history, null, 2))
+        fs.writeFileSync(hystemp, JSON.stringify(tekka))
       } catch (e) {
         err(`error pada ${cmd}`, e)
         call(xp, e, m)
@@ -239,7 +325,7 @@ export default function game(ev) {
     desc: 'gacha uang',
     owner: !1,
     prefix: !0,
-    money: 0,
+    money: 15000,
     exp: 0.1,
 
     run: async (xp, m, {
@@ -249,7 +335,7 @@ export default function game(ev) {
     }) => {
       try {
         const saldoBank = JSON.parse(fs.readFileSync(bankData, 'utf-8')),
-              user = Object.values(db().key).find(u => u.jid === chat.sender),
+              user = get.db(chat.sender),
               delay = ms => new Promise(res => setTimeout(res, ms)),
               sym = ['🕊️','🦀','🦎','🍀','💎','🍒','❤️','🎊'],
               randSym = () => sym[Math.floor(Math.random() * sym.length)]
@@ -285,7 +371,7 @@ export default function game(ev) {
           saldoBank.key.saldo += Math.abs(rsMoney)
         }
 
-        const saveBank = d => fs.writeFileSync(bankData, JSON.stringify(d, null, 2)),
+        const saveBank = d => fs.writeFileSync(bankData, JSON.stringify(d)),
               txt = `
 ╭───🎰 GACHA UANG 🎰───╮
 │               ${isi1.join(' : ')}
@@ -316,7 +402,7 @@ export default function game(ev) {
     desc: 'mengambil saldo dari bank',
     owner: !1,
     prefix: !0,
-    money: 0,
+    money: 1000,
     exp: 0.1,
 
     run: async (xp, m, {
@@ -328,20 +414,72 @@ export default function game(ev) {
         if (!args) return xp.sendMessage(chat.id, { text: 'masukan nominal\ncontoh: .tarik 1000' }, { quoted: m })
 
         const nominal = Number(args[0]),
-              usrdb = Object.values(db().key).find(u => u.jid === chat.sender)
+              usr = get.db(chat.sender)
 
-        if (!nominal || !usrdb) {
+        if (!nominal || !usr) {
           return xp.sendMessage(chat.id, { text: !nominal ? 'nominal tidak valid' : 'kamu belum terdaftar coba lagi' }, { quoted: m })
         }
 
-        const moneyBank = usrdb.moneyDb?.moneyInBank
-        if (moneyBank < nominal) return xp.sendMessage(chat.id, { text: `saldo bank kamu hanya tersisa Rp ${moneyBank.toLocaleString('id-ID')}` }, { quoted: m })
+        if (usr?.moneyDb?.moneyInBank < nominal) return xp.sendMessage(chat.id, { text: `saldo bank kamu hanya tersisa Rp ${usr?.moneyDb?.moneyInBank.toLocaleString('id-ID')}` }, { quoted: m })
 
-        usrdb.moneyDb.moneyInBank -= nominal
-        usrdb.moneyDb.money += nominal
+        usr.moneyDb.moneyInBank -= nominal
+        usr.moneyDb.money += nominal
         save.db()
 
         await xp.sendMessage(chat.id, { text: `Rp ${nominal.toLocaleString('id-ID')} berhasil di tarik dari bank` }, { quoted: m })
+      } catch (e) {
+        err(`error pada ${cmd}`, e)
+        call(xp, e, m)
+      }
+    }
+  })
+
+  ev.on({
+    name: 'tebak kata',
+    cmd: ['tebakkata', 'tekka'],
+    tags: 'Game Menu',
+    desc: 'game tebak kata',
+    owner: !1,
+    prefix: !0,
+    money: 1,
+    exp: 0.1,
+
+    run: async (xp, m, {
+      chat,
+      cmd
+    }) => {
+      try {
+        const { tebakkata } = await global.func(),
+              user = get.db(chat.sender),
+              key = Object.values(tebakkata),
+              list = key[Math.floor(Math.random() * key.length)]
+
+        const msg = await xp.sendMessage(chat.id, { text: `tebak kata dimulai\nsoal: ${list.soal}\n\nreply chat ini untuk menjawab` }, { quoted: m })
+
+        const __tebakkata = path.join(dirname, '../temp/history_tebak_kata.json')
+
+        let history = {}
+
+        if (fs.existsSync(__tebakkata)) {
+          history = JSON.parse(fs.readFileSync(__tebakkata, 'utf-8') || '{}')
+        }
+
+        history.key ??= {}
+        history.key[chat.sender] ??= {}
+
+        history.key[chat.sender][msg.key.id] = {
+          name: chat.pushName,
+          id: msg.key.id,
+          chat: chat.id,
+          no: user?.noId || chat.sender,
+          soal: list.soal,
+          key: list.jawaban,
+          chance: 3,
+          status: !0,
+          set: Date.now()
+        }
+
+        fs.writeFileSync(__tebakkata, JSON.stringify(history))
       } catch (e) {
         err(`error pada ${cmd}`, e)
         call(xp, e, m)
@@ -367,10 +505,9 @@ export default function game(ev) {
       try {
         if (!chat.group) return xp.sendMessage(chat.id, { text: 'perintah ini hanya bisa digunakan digrup' }, { quoted: m })
 
-        const quoted = m.message?.extendedTextMessage?.contextInfo,
-              target = quoted?.participant || quoted?.mentionedJid?.[0],
-              targetDb = Object.values(db().key).find(u => u.jid === target),
-              userDb = Object.values(db().key).find(u => u.jid === chat.sender)
+        const target = chat.quoted.id?.[0],
+              trg = get.db(target),
+              usr = get.db(chat.sender)
 
         if (!target || !args?.[0]) return xp.sendMessage(chat.id, { text: !target ? 'reply/tag orang yang akan menerima transfer' : 'nominal tidak valid\ncontoh: .tf @pengguna/reply 10000' }, { quoted: m })
 
@@ -378,14 +515,14 @@ export default function game(ev) {
         if (!nominal || nominal < 1e0)
           return xp.sendMessage(chat.id, { text: 'nominal tidak valid' }, { quoted: m })
 
-        if (!userDb || !targetDb) return xp.sendMessage(chat.id, { text: !userDb ? 'data kamu tidak ditemukan di database' : 'data penerima tidak ditemukan di database' }, { quoted: m })
+        if (!usr || !trg) return xp.sendMessage(chat.id, { text: !usr ? 'data kamu tidak ditemukan di database' : 'data penerima tidak ditemukan di database' }, { quoted: m })
 
-        const uMoney = userDb.moneyDb.money
+        const uMoney = usr.moneyDb.money
 
-        if (uMoney < nominal) return xp.sendMessage(chat.id, { text: `saldo kamu tersisa Rp ${userDb.moneyDb?.money.toLocaleString('id-ID')}` }, { quoted: m })
+        if (uMoney < nominal) return xp.sendMessage(chat.id, { text: `saldo kamu tersisa Rp ${usr.moneyDb?.money.toLocaleString('id-ID')}` }, { quoted: m })
 
-        userDb.moneyDb.money -= nominal
-        targetDb.moneyDb.money += nominal
+        usr.moneyDb.money -= nominal
+        trg.moneyDb.money += nominal
         save.db()
 
         let txt = `Rp ${nominal.toLocaleString('id-ID')} berhasil ditransfer`

@@ -1,3 +1,4 @@
+import jimp from 'jimp'
 import { gc } from '../../system/db/data.js'
 import { isJidGroup, downloadMediaMessage } from 'baileys'
 
@@ -24,7 +25,7 @@ export default function group(ev) {
       try {
         if (!chat.group) return xp.sendMessage(chat.id, { text: 'perintah ini hanya bisa digunakan digrup' }, { quoted: m })
 
-        const gcData = getGc(chat),
+        const gcData = get.gc(chat.id),
               { usrAdm, botAdm } = await grupify(xp, m)
 
         if (!gcData || !usrAdm || !botAdm || !ocrs) {
@@ -54,8 +55,7 @@ export default function group(ev) {
           if (ocrs === 'set') {
             let txt = args.join(' ').trim()
 
-            if (!txt)
-              return xp.sendMessage(chat.id, { text: `masukan kata-kata kasar nya\ncontoh: ${prefix}${cmd} set bahlil` }, { quoted: m })
+            if (!txt) return xp.sendMessage(chat.id, { text: `masukan kata-kata kasar nya\ncontoh: ${prefix}${cmd} set bahlil` }, { quoted: m })
 
             if (!Array.isArray(gcData.filter.badword.badwordtext))
               gcData.filter.badword.badwordtext = []
@@ -102,7 +102,7 @@ export default function group(ev) {
       try {
         if (!chat.group) return xp.sendMessage(chat.id, { text: 'perintah ini hanya bisa digunakan digrup' }, { quoted: m })
 
-        const gcData = getGc(chat),
+        const gcData = get.gc(chat.id),
               { usrAdm, botAdm } = await grupify(xp, m)
 
         if (!gcData || !usrAdm || !botAdm) {
@@ -146,7 +146,7 @@ export default function group(ev) {
       prefix
     }) => {
       try {
-        const gcData = getGc(chat),
+        const gcData = get.gc(chat.id),
               { usrAdm, botAdm } = await grupify(xp, m)
 
         if (!chat.group || !gcData || !usrAdm || !botAdm) {
@@ -190,7 +190,7 @@ export default function group(ev) {
       prefix
     }) => {
       try {
-        const gcData = getGc(chat),
+        const gcData = get.gc(chat.id),
               { usrAdm, botAdm } = await grupify(xp, m)
 
         if (!chat.group || !gcData || !usrAdm || !botAdm) {
@@ -234,7 +234,7 @@ export default function group(ev) {
       prefix
     }) => {
       try {
-        const gcData = getGc(chat),
+        const gcData = get.gc(chat.id),
               { usrAdm, botAdm } = await grupify(xp, m)
 
         if (!chat.group || !gcData || !usrAdm || !botAdm) {
@@ -281,7 +281,7 @@ export default function group(ev) {
         if (!chat.group) return xp.sendMessage(chat.id, { text: 'perintah ini hanya bisa digunakan digrup' }, { quoted: m })
 
         const { usrAdm, botAdm } = await grupify(xp, m),
-              gcData = getGc(chat)
+              gcData = get.gc(chat.id)
 
         if (!usrAdm || !botAdm || !gcData) {
           return xp.sendMessage(chat.id, { text: !usrAdm ? 'kamu bukan admin' : !botAdm ? 'aku bukan admin' : `grup ini belum terdaftar ketik ${prefix}daftargc untuk mendaftar` }, { quoted: m })
@@ -332,7 +332,7 @@ export default function group(ev) {
           return xp.sendMessage(chat.id, { text: !usrAdm ? 'kamu bukan admin' : !botAdm ? 'aku bukan admin' : 'reply/tag target yang akan diblacklist' }, { quoted: m })
         }
 
-        const gcData = getGc(chat),
+        const gcData = get.gc(chat.id),
               usr = target.replace(/@s\.whatsapp\.net$/, '')
 
         gcData.blacklist ??= []
@@ -396,7 +396,7 @@ export default function group(ev) {
       try {
         if (!chat.group) return xp.sendMessage(chat.id, { text: 'perintah ini hanya bisa digunakan digrup' }, { quoted: m })
 
-        const gcData = getGc(chat)
+        const gcData = get.gc(chat.id)
 
         if (gcData) return xp.sendMessage(chat.id, { text: 'grup ini sudah terdaftar' }, { quoted: m })
 
@@ -494,8 +494,7 @@ export default function group(ev) {
       try {
         if (!chat.group) return xp.sendMessage(chat.id, { text: 'perintah ini hanya bisa digunakan digrup' }, { quoted: m })
 
-        const quoted = m.message?.extendedTextMessage?.contextInfo,
-              target = quoted?.mentionedJid?.[0] || quoted?.participant,
+        const target = chat.quoted.id?.[0],
               { usrAdm, botAdm } = await grupify(xp, m)
 
         if (!usrAdm || !botAdm || !target) {
@@ -528,11 +527,9 @@ export default function group(ev) {
       cmd
     }) => {
       try {
-        const quoted = m.message?.extendedTextMessage?.contextInfo?.quotedMessage,
-              reply = quoted?.conversation,
-              { botAdm, usrAdm } = await grupify(xp, m),
+        const { botAdm, usrAdm } = await grupify(xp, m),
               text = args.join(' '),
-              fallback = reply || text,
+              fallback = chat.quoted.txt || text,
               gcInfo = groupCache.get(chat.id) || await xp.groupMetadata(chat.id),
               all = gcInfo.participants.map(v => v.id)
 
@@ -569,7 +566,7 @@ export default function group(ev) {
       prefix
     }) => {
       try {
-        const gcData = getGc(chat),
+        const gcData = get.gc(chat.id),
               w = gcData?.filter?.welcome,
               txt = w?.welcomeText?.trim() || 'halo selamat datang',
               wlcOn = w?.welcomeGc === true;
@@ -586,46 +583,59 @@ export default function group(ev) {
     }
   })
 
-  ev.on({
-    name: 'join gc',
-    cmd: ['join', 'masuk', 'joingc'],
-    tags: 'Group Menu',
-    desc: 'memasukkan bot ke grup dengan link',
-    owner: !1,
-    prefix: !0,
-    money: 1500,
-    exp: 0.1,
+ev.on({
+  name: 'join gc',
+  cmd: ['join', 'masuk', 'joingc'],
+  tags: 'Group Menu',
+  desc: 'memasukkan bot ke grup dengan link',
+  owner: !1,
+  prefix: !0,
+  money: 1500,
+  exp: 0.1,
 
-    run: async (xp, m, {
-      chat,
-      args,
-      cmd
-    }) => {
-      try {
-        let prompt = args.join(' '),
-            quoted = m.message?.extendedTextMessage?.contextInfo?.quotedMessage
+  run: async (xp, m, {
+    chat,
+    args,
+    cmd
+  }) => {
+    try {
+      const txt = chat.quoted.txt || args.join(' '),
+            match = txt.match(/https?:\/\/[^\s]+/gi),
+            link = match ? match[0] : null
 
-        if (quoted) prompt = quoted.conversation 
-                        || quoted.extendedTextMessage?.text 
-                        || quoted.extendedTextMessage?.prompt 
-                        || prompt
+      console.log('DEBUG: txt ->', txt)
+      console.log('DEBUG: match ->', match)
+      console.log('DEBUG: link ->', link)
 
-        const match = prompt?.match(/chat\.whatsapp\.com\/([\w\d]+)/)
-        if (!match) return xp.sendMessage(chat.id, { text: prompt ? 'Link grup tidak valid' : 'Link grupnya mana?' }, { quoted: m })
-
-        const res = await xp.groupAcceptInvite(match[1]),
-              text = isJidGroup(res) 
-                ? `Berhasil masuk ke grup dengan ID: ${res}` 
-                : 'Undangan diterima, menunggu persetujuan admin'
-
-        await xp.sendMessage(chat.id, { text }, { quoted: m })
-
-      } catch (e) {
-        err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+      if (!link || !/chat\.whatsapp\.com/i.test(link)) {
+        console.log('DEBUG: invalid link')
+        return xp.sendMessage(chat.id, { text: !link ? 'link grup nya mana?' : 'link tidak valid' }, { quoted: m })
       }
+
+      console.log('DEBUG: processing invite...')
+
+      const code = link.split('/').pop().split('?')[0]
+      
+      console.log('DEBUG: code ->', code)
+      
+      const res = await xp.groupAcceptInvite(code)
+
+      console.log('DEBUG: res ->', res)
+
+      const text = isJidGroup(res) 
+        ? `Berhasil masuk ke grup dengan ID: ${res}` 
+        : 'Undangan diterima, menunggu persetujuan admin'
+
+      console.log('DEBUG: final text ->', text)
+
+      await xp.sendMessage(chat.id, { text }, { quoted: m })
+    } catch (e) {
+      console.log('DEBUG ERROR:', e)
+      err(`error pada ${cmd}`, e)
+      call(xp, e, m)
     }
-  })
+  }
+})
 
   ev.on({
     name: 'kick',
@@ -645,8 +655,7 @@ export default function group(ev) {
         if (!chat.group) return xp.sendMessage(chat.id, { text: 'perintah ini hanya bisa dijalankan di grup' }, { quoted: m })
 
         const { botAdm, usrAdm, adm } = await grupify(xp, m),
-              quoted = m.message?.extendedTextMessage?.contextInfo,
-              target = quoted?.mentionedJid?.[0] || quoted?.participant
+              target = chat.quoted.id?.[0]
 
         if (!usrAdm || !botAdm || !target || adm.includes(target)) {
           const txt = !usrAdm ? 'kamu bukan admin'
@@ -687,8 +696,7 @@ export default function group(ev) {
       try {
         if (!chat.group) return xp.sendMessage(chat.id, { text: 'perintah ini hanya bisa dijalankan digrup' }, { quoted: m })
 
-        const gcData = getGc(chat),
-              quoted = m.message?.extendedTextMessage?.contextInfo?.quotedMessage?.conversation,
+        const gcData = get.gc(chat.id),
               { usrAdm, botAdm } = await grupify(xp, m)
 
         if (!gcData || !usrAdm || !botAdm || !ocrs) {
@@ -711,7 +719,7 @@ export default function group(ev) {
           await xp.sendMessage(chat.id, { text: `${cmd} ${ocrs === 'on' ? 'diaktifkan' : 'dinonaktifkan'}` }, { quoted: m })
 
         if (ocrs === 'set') {
-          let lftTxt = text.replace(/^[^\s]+\s*left\s+set/i, "").trim() || quoted
+          let lftTxt = text.replace(/^[^\s]+\s*left\s+set/i, "").trim() || chat.quoted.txt
 
           if (!lftTxt) return xp.sendMessage(chat.id, { text: 'masukan/reply pesan selamat tinggalnya' }, { quoted: m })
 
@@ -754,7 +762,7 @@ export default function group(ev) {
         if (!chat.group) return xp.sendMessage(chat.id, { text: 'perintah ini hanya bisa digunakan digrup' }, { quoted: m })
 
         const input = args.join(' '),
-              gcData = getGc(chat),
+              gcData = get.gc(chat.id),
               type = v => v ? 'Aktif' : 'Tidak',
               modeMute = type(gcData?.filter?.mute),
               opsi = !!gcData?.filter?.mute,
@@ -882,8 +890,7 @@ export default function group(ev) {
       try {
         if (!chat.group) return xp.sendMessage(chat.id, { text: 'perintah ini hanya untuk grup' }, { quoted: m })
 
-        const quoted = m.message?.extendedTextMessage?.contextInfo,
-              target = quoted?.mentionedJid?.[0] || quoted?.participant,
+        const target = chat.quoted.id?.[0],
               { usrAdm, botAdm } = await grupify(xp, m)
 
         if (!usrAdm || !botAdm || !target) {
@@ -929,7 +936,10 @@ export default function group(ev) {
         const media = await downloadMediaMessage({ message: q || m.message }, 'buffer')
         if (!media) throw new Error('Gagal mengunduh media')
 
-        await xp.updateProfilePicture(chat.id, media)
+        const imgJimp = await jimp.read(media),
+              cropped = imgJimp.cover(720, 720).getBufferAsync(jimp.MIME_JPEG)
+
+        await xp.updateProfilePicture(chat.id, await cropped)
         await xp.sendMessage(chat.id, { text: 'foto profile grup berhasil diperbaharui' }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
@@ -960,8 +970,7 @@ export default function group(ev) {
       try {
         if (!chat.group) return xp.sendMessage(chat.id, { text: 'perintah ini hanya bisa digunakan digrup' }, { quoted: m })
 
-        const gcData = getGc(chat),
-              quoted = m.message?.extendedTextMessage?.contextInfo?.quotedMessage?.conversation,
+        const gcData = get.gc(chat.id),
               { usrAdm, botAdm } = await grupify(xp, m)
 
         if (!gcData || !usrAdm || !botAdm || !ocrs) {
@@ -987,7 +996,7 @@ export default function group(ev) {
           xp.sendMessage(chat.id, { text: `${cmd} ${ocrs === 'on' ? 'diaktifkan' : 'dinonaktifkan'}` }, { quoted: m })
 
         if (ocrs === 'set') {
-          let wlcTxt = text.replace(/^[^\s]+\s*welcome\s+set/i, "").trim() || quoted
+          let wlcTxt = text.replace(/^[^\s]+\s*welcome\s+set/i, "").trim() || chat.quoted.txt
 
           if (!wlcTxt) return xp.sendMessage(chat.id, { text: 'masukan/reply pesan selamat datangnya' }, { quoted: m })
 

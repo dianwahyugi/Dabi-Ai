@@ -35,8 +35,7 @@ export default function tools(ev) {
                   const i = r.indexOf(c)
                   return i !== -1 ? abc[i] : c
                 }).join(''),
-              q = m.message?.extendedTextMessage?.contextInfo?.quotedMessage,
-              text = q?.conversation || q?.text || args.join(' ')
+              text = chat.quoted.txt || args.join(' ')
 
         if (!text) return xp.sendMessage(chat.id, { text: 'reply atau masukkan teks enigma' }, { quoted: m })
 
@@ -49,7 +48,6 @@ export default function tools(ev) {
               result = dec(text, rotor)
 
         await xp.sendMessage(chat.id, { text: result }, { quoted: m })
-
       } catch (e) {
         err(`error pada ${cmd}`, e)
         call(xp, e, m)
@@ -80,8 +78,6 @@ export default function tools(ev) {
         if (!load) return xp.sendMessage(chat.id, { text: 'pastikan reply pesan yang diteruskan dari saluran' }, { quoted: m })
 
         const info = load?.message?.[load.message?.extendedTextMessage ? 'extendedTextMessage' : 'conversation']?.contextInfo?.forwardedNewsletterMessageInfo
-
-        log(info)
 
         if (!info?.newsletterJid) return xp.sendMessage(chat.id, { text: 'Tidak ditemukan informasi saluran.' }, { quoted: m })
 
@@ -130,8 +126,7 @@ export default function tools(ev) {
       cmd
     }) => {
       try {
-        const quoted = m.message?.extendedTextMessage?.contextInfo,
-              target = quoted?.participant || quoted?.mentionedJid?.[0],
+        const target = chat.quoted.id?.[0],
               user = target.replace(/@s\.whatsapp\.net$/, ''),
               { usrAdm, botAdm } = await grupify(xp, m),
               defThumb = 'https://c.termai.cc/i0/7DbG.jpg'
@@ -192,8 +187,7 @@ export default function tools(ev) {
 
         let i = 0
 
-        if (!task?.status)
-          return xp.sendMessage(chat.id, { text: task?.msg || 'Gagal membuat task enhance.' }, { quoted: m })
+        if (!task?.status) return xp.sendMessage(chat.id, { text: task?.msg || 'Gagal membuat task enhance.' }, { quoted: m })
 
         while (i++ < 5e1) {
           const status = await fetch(`${termaiWeb}/api/tools/enhance/taskStatus?id=${task.id}&key=${termaiKey}`).then(r => r.json()).catch(() => null)
@@ -206,7 +200,7 @@ export default function tools(ev) {
           await new Promise(r => setTimeout(r, 1e3))
         }
 
-        xp.sendMessage(chat.id, { text: 'Waktu pemrosesan habis. Coba lagi.' }, { quoted: m })
+        await xp.sendMessage(chat.id, { text: 'Waktu pemrosesan habis. Coba lagi.' }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
         call(xp, e, m)
@@ -231,8 +225,7 @@ export default function tools(ev) {
       prefix
     }) => {
       try {
-        const q = m.message?.extendedTextMessage?.contextInfo?.quotedMessage,
-              text = q?.conversation || q?.text || args.join(' ')
+        const text = chat.quoted.txt || args.join(' ')
 
         if (!text) return xp.sendMessage(chat.id, { text: `Masukkan teks atau reply pesan\nContoh: ${prefix}${cmd} halo aku ${botName}` }, { quoted: m });
 
@@ -283,8 +276,7 @@ export default function tools(ev) {
       prefix
     }) => {
       try {
-        const q = m.message?.extendedTextMessage?.contextInfo?.quotedMessage,
-              text = q?.conversation || args.join(' ')
+        const text = chat.quoted.txt || args.join(' ')
 
         if (!text) return xp.sendMessage(chat.id, { text: `masukan atau reply pesan nya\ncontoh: ${prefix}${cmd} .... .- .-.. ---   .- -.- ..-   -... --- -` }, { quoted: m })
 
@@ -344,9 +336,7 @@ export default function tools(ev) {
         const quoted = m.message?.extendedTextMessage?.contextInfo?.quotedMessage,
               video = quoted?.videoMessage || m.message?.videoMessage
 
-        if (!video) {
-          return xp.sendMessage(chat.id, { text: 'reply atau kirim video yang ingin dijadikan ptv' }, { quoted: m })
-        }
+        if (!video) return xp.sendMessage(chat.id, { text: 'reply atau kirim video yang ingin dijadikan ptv' }, { quoted: m })
 
         const buffer = await downloadMediaMessage({ message: quoted || m.message }, 'buffer')
 
@@ -379,10 +369,7 @@ export default function tools(ev) {
       try {
         const txt = args?.join(' ')
 
-        if (!txt?.includes('|'))
-          return xp.sendMessage(chat.id, {
-            text: `format salah\ncontoh: ${prefix}${cmd} teks 1 | teks 2`
-          }, { quoted: m })
+        if (!txt?.includes('|')) return xp.sendMessage(chat.id, { text: `format salah\ncontoh: ${prefix}${cmd} teks 1 | teks 2` }, { quoted: m })
 
         const [t1, t2] = txt.split('|').map(v => v.trim()),
               result = `${t1}${global.readmore} ${t2}`
@@ -465,11 +452,9 @@ export default function tools(ev) {
                   const i = abc.indexOf(c)
                   return i !== -1 ? r[i] : c
                 }).join(''),
-              q = m.message?.extendedTextMessage?.contextInfo?.quotedMessage,
-              text = q?.conversation || q?.text || args.join(' ')
+              text = chat.quoted.txt || args.join(' ')
 
-        if (!text) return xp.sendMessage(chat.id, {
-            text: `Masukkan teks atau reply pesan\nContoh: ${prefix}${cmd} halo aku ${botName}` }, { quoted: m })
+        if (!text) return xp.sendMessage(chat.id, { text: `Masukkan teks atau reply pesan\nContoh: ${prefix}${cmd} halo aku ${botName}` }, { quoted: m })
 
         !fs.existsSync(file)
           ? fs.writeFileSync(file, JSON.stringify({ key: {} }, null, 2))
@@ -515,8 +500,7 @@ export default function tools(ev) {
       prefix
     }) => {
       try {
-        const q = m.message?.extendedTextMessage?.contextInfo?.quotedMessage,
-              text = q?.conversation || q?.text || args.join(' ')
+        const text = chat.quoted.txt || args.join(' ')
 
         if (!text) return xp.sendMessage(chat.id, { text: `Masukkan teks atau reply pesan\nContoh: ${prefix}${cmd} halo aku ${botName}` }, { quoted: m })
 
@@ -567,8 +551,7 @@ export default function tools(ev) {
       prefix
     }) => {
       try {
-        const q = m.message?.extendedTextMessage?.contextInfo?.quotedMessage,
-              text = q?.conversation || q?.text || args.join(' ')
+        const text = chat.quoted.txt || args.join(' ')
 
         if (!text) return xp.sendMessage(chat.id, { text: `masukan atau reply pesan nya\ncontoh: ${prefix}${cmd} halo aku ${botName}` }, { quoted: m })
 
@@ -713,7 +696,7 @@ export default function tools(ev) {
 
   ev.on({
     name: 'to vn',
-    cmd: ['tovn', 'vn'],
+    cmd: ['tovn'],
     tags: 'Tools Menu',
     desc: 'ubah lagu jadi vn',
     owner: !1,

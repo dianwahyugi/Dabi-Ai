@@ -28,15 +28,15 @@ export default function ai(ev) {
           return xp.sendMessage(chat.id, { text: `Gunakan perintah ${prefix}${cmd} on/off` }, { quoted: m });
 
         const value = val === 'on',
-              userdb = Object.values(db().key).find(u => u.jid === chat.sender),
-              opsi = !!userdb?.ai?.bell
+              usr = get.db(chat.sender),
+              opsi = !!usr?.ai?.bell
 
         if ((value && opsi) || (!value && !opsi)) {
           return xp.sendMessage(chat.id, { text: `${cmd} sudah ${value ? 'aktif' : 'nonaktif'}`
           }, { quoted: m })
         }
 
-        userdb.ai.bell = value
+        usr.ai.bell = value
         save.db()
 
         xp.sendMessage(chat.id, { text: `${cmd} telah ${value ? 'diaktifkan' : 'dinonaktifkan'}.` }, { quoted: m })
@@ -271,14 +271,9 @@ export default function ai(ev) {
       cmd
     }) => {
       try {
-        const target = m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0]
-          || m.message?.extendedTextMessage?.contextInfo?.participant
-          || chat.sender
+        if (!chat.sender) return await xp.sendMessage(chat.id, { text: 'Target tidak ditemukan.' }, { quoted: m })
 
-        if (!target) 
-          return await xp.sendMessage(chat.id, { text: 'Target tidak ditemukan.' }, { quoted: m })
-
-        const res  = await fetch(`${termaiWeb}/api/chat/logic-bell/reset?id=${target}&key=${termaiKey}`),
+        const res  = await fetch(`${termaiWeb}/api/chat/logic-bell/reset?id=${chat.sender}&key=${termaiKey}`),
               json = await res.json()
 
         await xp.sendMessage(chat.id, { text: json.m || json.msg || 'Terjadi error saat reset sesi Bell.' }, { quoted: m })
@@ -306,17 +301,15 @@ export default function ai(ev) {
       prefix
     }) => {
       try {
-        const ctx = m.message?.extendedTextMessage?.contextInfo,
-              q = ctx?.quotedMessage?.conversation,
-              cfg = JSON.parse(fs.readFileSync('./system/set/config.json', 'utf-8')),
-              newLogic = q || args.join(' ')
+        const q = chat.quoted.txt,
+              cfg = JSON.parse(fs.readFileSync('./system/set/config.json', 'utf-8'))
 
-        if (!newLogic) return xp.sendMessage(chat.id, { text: `contoh:\n${prefix}${cmd} teks logika\n\nlogika saat ini:\n${cfg?.botSetting?.logic || 'belum di setting'}` }, { quoted: m })
+        if (!q) return xp.sendMessage(chat.id, { text: `contoh:\n${prefix}${cmd} teks logika\n\nlogika saat ini:\n${cfg?.botSetting?.logic || 'belum di setting'}` }, { quoted: m })
 
-        cfg.botSetting.logic = newLogic
+        cfg.botSetting.logic = q
         fs.writeFileSync('./system/set/config.json', JSON.stringify(cfg, null, 2))
 
-        await xp.sendMessage(chat.id, { text: `logic ai berhasil diubah ke:\n${newLogic}` }, { quoted: m })
+        await xp.sendMessage(chat.id, { text: `logic ai berhasil diubah ke:\n${q}` }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
         call(xp, e, m)
