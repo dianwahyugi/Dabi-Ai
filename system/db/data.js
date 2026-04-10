@@ -42,9 +42,10 @@ const db = () => init.db,
       gm = () => init.gm,
       bnk = () => init.bnk
 
-const getUsr = jid => Object.values(db().key).find(u => u.jid === jid)
-
-const getGc = chat => gc()?.key && Object.values(gc().key).find(g => String(g?.id) === String(chat.id)) || null
+const get = {
+  db: jid => Object.values(db().key).find(u => u.jid === jid),
+  gc: id => gc()?.key && Object.values(gc().key).find(g => String(g?.id) === String(id)) || null
+}
 
 const save = {
   db() {
@@ -52,11 +53,10 @@ const save = {
       try {
         await fs.promises.writeFile(
           database,
-          JSON.stringify(init.db, null, 2)
+          JSON.stringify(init.db)
         )
       } catch (e) {
         console.error('error pada save.db', e)
-        erl(e, 'save.db')
       }
     })
     return saving
@@ -67,11 +67,10 @@ const save = {
       try {
         await fs.promises.writeFile(
           datagame,
-          JSON.stringify(init.gm, null, 2)
+          JSON.stringify(init.gm)
         )
       } catch (e) {
         console.error('error pada save.gm', e)
-        erl(e, 'save.gm')
       }
     })
     return saving
@@ -86,7 +85,6 @@ const save = {
         )
       } catch (e) {
         console.log('error pada save.gc', e)
-        erl(e, 'save.gc')
       }
     })
     return saving
@@ -110,7 +108,7 @@ const listRole = [
 ]
 
 const role = jid => {
-  const user = getUsr(jid)
+  const user = get.db(jid)
   if (!user?.ai) return
 
   const exp = user.exp || 0,
@@ -182,6 +180,10 @@ const authUser = async (m) => {
       game: {
         farm: !1,
         dead: !1,
+        kill: {
+          status: !1,
+          target: 0
+        },
         robbery: {
           cost: 3
         },
@@ -199,7 +201,7 @@ const authUser = async (m) => {
 const authFarm = async m => {
   try {
     const chat = global.chat(m),
-          userDb = getUsr(chat.sender),
+          userDb = get.db(chat.sender),
           gameDb = Object.values(gm().key.farm).find(u => u.jid === chat.sender),
           group = !!chat?.group,
           time = global.time.timeIndo("Asia/Jakarta", "DD-MM-YYYY HH:mm:ss"),
@@ -233,12 +235,12 @@ const authFarm = async m => {
 
 export {
   init,
+  get,
   db,
   gc,
   gm,
   bnk,
   authFarm,
-  getGc,
   save,
   role,
   randomId,
