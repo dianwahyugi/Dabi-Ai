@@ -1,6 +1,7 @@
 import fetch from 'node-fetch'
 import fs from 'fs'
 import { bell } from '../cmd/interactive.js'
+import { isJidGroup } from 'baileys'
 import { bnk } from './db/data.js'
 import { tmpFiles } from './tmpfiles.js'
 
@@ -34,20 +35,30 @@ async function saveLidCache(metadata) {
 
 function replaceLid(o, v = new WeakSet()) {
   if (!o) return o
+
   if (typeof o == "object") {
     if (v.has(o)) return o
     v.add(o)
-    if (Array.isArray(o)) return o.map(i => replaceLid(i, v))
-    if (Buffer.isBuffer(o) || o instanceof Uint8Array) return o
+
+    const isArr = Array.isArray(o),
+          isBuf = Buffer.isBuffer(o) || o instanceof Uint8Array
+
+    if (isArr) return o.map(i => replaceLid(i, v))
+    if (isBuf) return o
+
     for (const k in o) o[k] = replaceLid(o[k], v)
     return o
   }
+
   if (typeof o == "string") {
-    const e = Object.entries(global.lidCache ?? {})
-    if (/@lid$/.test(o)) {
+    const e = Object.entries(global.lidCache ?? {}),
+          isLid = /@lid$/.test(o)
+
+    if (isLid) {
       const p = e.find(([, v]) => v === o)?.[0]
       if (p) return `${p}@s.whatsapp.net`
     }
+
     return o
       .replace(/@(\d+)@lid/g, (_, i) => {
         const p = e.find(([, v]) => v === `${i}@lid`)?.[0]
@@ -58,6 +69,7 @@ function replaceLid(o, v = new WeakSet()) {
         return p ? `@${p}` : m
       })
   }
+
   return o
 }
 
@@ -103,7 +115,7 @@ const cleanMsg = obj => {
 }
 
 async function func() {
-  const url = 'https://raw.githubusercontent.com/MaouDabi0/Dabi-Ai-Documentation/main/assets/func.js',
+  const url = 'https://raw.githubusercontent.com/Dabilines/Dabi-Ai-Documentation/main/assets/func.js',
         code = await fetch(url).then(r => r.text()),
         data = 'data:text/javascript;base64,' + Buffer.from(code).toString('base64'),
         md = await import(data),
@@ -114,12 +126,12 @@ async function func() {
 
 async function filter(xp, m, text) {
   const chat = global.chat(m),
-        gcData = getGc(chat),
+        gcData = get.gc(chat.id),
         meta = await grupify(xp, m)
 
   if (!meta) return
 
-  const { usrAdm, botAdm } = meta
+  const { usrAdm, botAdm, adm } = meta
 
   const filter = {
     link: async t =>
@@ -149,6 +161,179 @@ async function filter(xp, m, text) {
       return (gcData?.filter?.antitagsw && botAdm && !usrAdm && txt)
         ? await xp.sendMessage(chat.id, { delete: m.key }).catch(() => {})
         : !1
+    },
+
+    autoback: async () => {
+      if (!gcData || !botAdm) return !1
+
+      const text = m.message?.conversation || m.message?.extendedTextMessage?.text || m.message?.extendedTextMessage?.conversation,
+            bot = chat.sender === xp.user?.id?.split(':')[0]
+
+      if (bot || !text) return !1
+
+      global.autoback = global.autoback || {},
+      global.autoback[chat.id] = global.autoback[chat.id] || {}
+
+      const isLink = await filter.link(text),
+            match = text.match(/https?:\/\/[^\s]+/gi),
+            link = match ? match[0] : null
+
+      if (!(gcData?.filter?.autoback && isLink && !usrAdm && link)) return !1
+
+      const getlink = await xp.groupInviteCode(chat.id),
+            linkgc = `https://chat.whatsapp.com/${getlink}`,
+            ppgc = await xp.profilePictureUrl(chat.id, 'image'),
+            linkusr = link.split('/').pop().split('?')[0]
+
+      let res, is304 = !1
+
+      try {
+        res = await xp.groupAcceptInvite(linkusr)
+      } catch (e) {
+        if (e?.data === 410) return !1
+
+        if (e?.data === 401) {
+          await xp.sendMessage(chat.id, { text: 'gw di kick lol' }, { quoted: m }).catch(() => !1)
+
+          await xp.sendMessage(chat.id, { delete: m.key }).catch(() => !1)
+
+          global.autoback?.[chat.id]?.[chat.sender] && delete global.autoback[chat.id][chat.sender]
+
+          return !0
+        }
+
+        if (e?.data === 304) is304 = !0
+
+        if (e?.data === 409) {
+          await xp.sendMessage(chat.id, { text: 'okey gw bck ya' }, { quoted: m }).catch(() => !1)
+
+          let info = null
+
+          try {
+            info = await xp.groupGetInviteInfo(linkusr)
+          } catch {}
+
+          if (info?.id) {
+            await xp.sendMessage(info.id, {
+              text: `bck tadi @${chat.sender?.replace(/@s\.whatsapp\.net$/, '')} ${linkgc}`,
+              mentions: [chat.sender],
+              contextInfo: {
+                externalAdReply: {
+                  body: `ini bot`,
+                  thumbnailUrl: ppgc,
+                  mediaType: 1,
+                  renderLargerThumbnail: !0
+                }
+              }
+            }).catch(() => !1)
+          }
+
+          delete global.autoback[chat.id]
+
+          return !0
+        }
+
+        if (!is304) return !1
+      }
+
+      const isGc = is304 ? !1 : isJidGroup(res)
+
+      if (!isGc) {
+        await xp.sendMessage(chat.id, {
+          text: is304 ? 'gw gak di acc 3 menit gak di acc del.' : 'acc lama hapus'
+        }, { quoted: m }).catch(() => !1)
+
+        global.autoback[chat.id][chat.sender] = {
+          id: m.key.id,
+          linkusr,
+          timer: { start: m.messageTimestamp * 1e3 || Date.now() }
+        }
+
+        setTimeout(async () => {
+          const d = global.autoback?.[chat.id]?.[chat.sender]
+          if (!d || d.id !== m.key?.id) return
+
+          const now = Date.now(),
+                elapsed = now - d.timer.start
+
+          if (elapsed < 17e4) return
+
+          let info = null, joined = !1
+
+          try {
+            info = await xp.groupGetInviteInfo(linkusr)
+          } catch {}
+
+          if (info?.id) {
+            try {
+              await xp.groupMetadata(info.id)
+              joined = !0
+            } catch {
+              joined = !1
+            }
+          }
+
+          if (joined && info?.id) {
+            await xp.sendMessage(info.id, {
+              text: `bck tadi @${chat.sender?.replace(/@s\.whatsapp\.net$/, '')} ${linkgc}`,
+              mentions: [chat.sender],
+              contextInfo: {
+                externalAdReply: {
+                  body: `ini bot`,
+                  thumbnailUrl: ppgc,
+                  mediaType: 1,
+                  renderLargerThumbnail: !0
+                }
+              }
+            }).catch(() => !1)
+
+            delete global.autoback[chat.id][chat.sender]
+          }
+
+        }, 17e4)
+
+        setTimeout(async () => {
+          const d = global.autoback?.[chat.id]?.[chat.sender]
+          if (!d || d.id !== m.key?.id) return
+
+          const now = Date.now(),
+                elapsed = now - d.timer.start
+
+          if (elapsed < 18e4) return
+
+          if (is304) {
+            await xp.sendMessage(chat.id, { text: 'lama lu' }, { quoted: m }).catch(() => !1)
+
+            await xp.sendMessage(chat.id, {
+              delete: {
+                remoteJid: chat.id,
+                fromMe: !1,
+                id: d.id,
+                participant: chat.sender
+              }
+            }).catch(() => !1)
+
+            delete global.autoback[chat.id][chat.sender]
+
+            return
+          }
+
+          await xp.sendMessage(chat.id, { text: 'lama lu' }, { quoted: m }).catch(() => !1)
+
+          await xp.sendMessage(chat.id, {
+            delete: {
+              remoteJid: chat.id,
+              fromMe: !1,
+              id: d.id,
+              participant: chat.sender
+            }
+          }).catch(() => !1)
+
+          delete global.autoback[chat.id][chat.sender]
+        }, 18e4)
+
+        return !0
+      }
     },
 
     badword: async () => {
@@ -227,42 +412,43 @@ async function filter(xp, m, text) {
 async function cekSpam(xp, m) {
   const chat = global.chat(m),
         user = m.key.participant || chat.sender,
-        usrData = Object.values(db().key).find(u => u.jid === user),
+        usrData = get.db(user),
         now = Date.now(),
-        target = m.key?.jadibot
-          ? usrData?.jid + '.jadibot'
-          : usrData?.jid
+        msgTime = (m.messageTimestamp?.low || m.messageTimestamp || now) * 1e3,
+        target = m.key?.jadibot ? usrData?.jid + '.jadibot' : usrData?.jid
 
   if (!usrData) return !1
 
-  if (!spamData[target]) {
-    return spamData[target] = {
-      count: 1,
-      time: { last: now }
-    }, !1
-  }
+  if (!spamData[target]) return spamData[target] = {
+    count: 1,
+    time: { last: msgTime },
+    block: 0
+  }, !1
 
-  const diff = now - spamData[target].time.last
+  if (spamData[target].block && now < spamData[target].block) return !0
 
-  if (diff <= 1e3) {
+  const diff = msgTime - spamData[target].time.last
+
+  if (diff <= 2.5e3) {
     spamData[target].count++,
-    spamData[target].time.last = now
+    spamData[target].time.last = msgTime
 
-    if (spamData[target].count >= 2) {
-
-      await xp.sendMessage(chat.id, { text: 'jangan spam' }, { quoted: m })
+    if (spamData[target].count >= 1) {
+      await xp.sendMessage(chat.id, { text: 'jangan spam' }, { quoted: m }),
+      spamData[target].block = now + 7e3
 
       return spamData[target].count = 0, !0
     }
     return !1
   }
 
-  return diff >= 5e3
+  return diff >= 7e3
     ? (spamData[target] = {
         count: 1,
-        time: { last: now }
+        time: { last: msgTime },
+        block: 0
       }, !1)
-    : (spamData[target].time.last = now, !1)
+    : (spamData[target].time.last = msgTime, !1)
 }
 
 async function _imgTmp() {
@@ -294,7 +480,7 @@ async function afk(xp, m) {
         quoted = canQuote ? { quoted: m } : {},
         ctx = m.message?.extendedTextMessage?.contextInfo,
         target = Array.isArray(ctx?.mentionedJid) ? ctx.mentionedJid[0] : ctx?.participant,
-        targetUser = users.find(u => u.jid === target),
+        targetUsr = users.find(u => u.jid === target),
         now = global.time.timeIndo('Asia/Jakarta', 'DD-MM HH:mm:ss'),
         calc = a => {
           if (!a?.afkStart) return 'baru saja'
@@ -313,16 +499,15 @@ async function afk(xp, m) {
 
   if (!chat?.id || !self) return
 
-  if (targetUser?.afk?.status) return xp.sendMessage(chat.id, { text: `jangan tag dia, dia sedang afk\nWaktu AFK: ${calc(targetUser.afk)}` }, quoted)
+  if (targetUsr?.afk?.status) return xp.sendMessage(chat.id, { text: `jangan tag dia,\ndia sedang afk, dengan alasan: ${targetUsr?.afk?.reason || 'tidak ada alasan'}\nwaktu AFK: ${calc(targetUsr.afk)}` }, quoted)
 
   if (!self.afk?.status) return
 
-  const reason = self.afk.reason || 'tidak ada alasan',
-        dur = calc(self.afk),
+  const dur = calc(self.afk),
         tag = !m?.message,
         text = tag
-          ? `@${chat.sender.split('@')[0]} kembali dari AFK: "${reason}"\nWaktu AFK: ${dur}`
-          : `Kamu kembali dari AFK: "${reason}"\nWaktu AFK: ${dur}`
+          ? `@${chat.sender.split('@')[0]} kembali dari AFK: "${self?.afk?.reason || 'tidak ada alasan'}"\nWaktu AFK: ${dur}`
+          : `Kamu kembali dari AFK: "${self?.afk?.reason || 'tidak ada alasan'}"\nWaktu AFK: ${dur}`
 
   self.afk.status = !1
   self.afk.reason = ''
@@ -335,7 +520,7 @@ async function afk(xp, m) {
 
 async function _tax(xp, m) {
   const chat = global.chat(m),
-        usrDb = Object.values(db().key).find(u => u.jid === chat.sender),
+        usrDb = get.db(chat.sender),
         taxStr = bnk().key?.tax || '0%',
         tax = parseInt(taxStr.replace('%', '')) || 0,
         money = usrDb?.moneyDb?.money || 0
@@ -401,7 +586,6 @@ async function filterMsg(m, chat, text) {
         }
 
         resolve(!0)
-
       }, 5e1)
     })
   }

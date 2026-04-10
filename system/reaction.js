@@ -93,7 +93,7 @@ let rct_txt = `*berikut penjelasan fitur reaction cmd*\n`
     rct_txt += `❌ → hapus pesan ( digrup )\n`
     rct_txt += `👑 → menjadikan admin grup\n`
     rct_txt += `💨 → menurukan admin grup\n`
-    rct_txt += `🎤 → membuat voice chat\n`
-    rct_txt += `🦵 → mengeluarkan member dari grup`
+    rct_txt += `🦵 → mengeluarkan member dari grup\n`
+    rct_txt += `🎤 → membuat vn dari chat yang direply`
 
 export { rct_key, rct_txt }

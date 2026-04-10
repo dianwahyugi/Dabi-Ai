@@ -2,9 +2,9 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import sys from './sys.js'
-import { number, makeInMemoryStore, erl } from './helper.js'
+import { number, makeInMemoryStore } from './helper.js'
 import { call, func, imgCache, groupCache } from './function.js'
-import { db, gm, save, getGc } from './db/data.js'
+import { db, gm, save, get } from './db/data.js'
 
 const filename = fileURLToPath(import.meta.url),
        dirname = path.dirname(filename),
@@ -41,12 +41,11 @@ const config = './system/set/config.json',
         db,
         gm,
         save,
-        getGc,
+        get,
         filename,
         groupCache,
         dirname,
         number,
-        erl,
         readmore,
         store,
         call,

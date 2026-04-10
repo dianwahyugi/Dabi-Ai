@@ -16,11 +16,26 @@ const chat = (m, botName = "pengguna") => {
         pushName = (m?.verifiedBizName || m?.pushName || sender.replace(/@s\.whatsapp\.net$/, "")).trim()
           || (sender.endsWith("@s.whatsapp.net")
             ? sender.replace(/@s\.whatsapp\.net$/, "")
-            : botName);
+            : botName),
+        quoted = {
+          id: (() => {
+            const ctx = m.message?.extendedTextMessage?.contextInfo,
+                  mj = ctx?.mentionedJid,
+                  pt = ctx?.participant?.split(':')[0]
+
+            if (Array.isArray(mj) || (mj ? !0 : !1)) return Array.isArray(mj) ? mj : [mj]
+            if (pt || (pt ? !0 : !1)) return [pt]
+
+            return []
+          })(),
+          txt: m.message?.extendedTextMessage?.contextInfo?.quotedMessage?.conversation
+            || m.message?.extendedTextMessage?.contextInfo?.quotedMessage?.text
+            || null
+        }
 
   if (!id) return null;
 
-  return { id, group, channel, sender, pushName };
+  return { id, group, channel, sender, pushName, quoted };
 };
 
 export const banned = chat => {
@@ -44,7 +59,7 @@ export const bangc = chat => {
   const user = chat.sender,
         target = user.replace(/\D/g, ''),
         owner = (global.ownerNumber || []).map(v => v.replace(/\D/g, '')),
-        ban = !owner.includes(target) && !!getGc(chat)?.ban;
+        ban = !owner.includes(target) && !!get.gc(chat.id)?.ban;
 
   return ban ? (log(c.redBright.bold(`Grup ${chat.id} diban`)), !0) : !1;
 };
@@ -72,12 +87,12 @@ const grupify = async (xp, m) => {
   }
 }
 
-export const txtWlc = async (xp, chat) => {
+export const txtWlc = async (xp, id) => {
   try {
-    const gcData = getGc(chat),
-          meta = groupCache.get(chat.id) || await getMetadata(chat.id, xp),
+    const gcData = get.gc(id),
+          meta = groupCache.get(id) || await getMetadata(id, xp),
           txt = gcData?.filter?.welcome?.welcomeText?.trim()
-                || `selamat datang @user digrup ${meta?.subject || chat.id}`;
+                || `selamat datang @user digrup ${meta?.subject || id}`;
 
     return { txt };
   } catch (e) {
@@ -85,11 +100,11 @@ export const txtWlc = async (xp, chat) => {
   }
 }
 
-export const txtLft = async (xp, chat) => {
+export const txtLft = async (xp, id) => {
   try {
-    const gcData = getGc(chat),
-          meta = groupCache.get(chat.id) || await getMetadata(chat.id, xp),
-          txt = gcData?.filter?.left?.leftText?.trim() || `%user keluar dari grup ${meta?.subject || chat.id}`
+    const gcData = get.gc(id),
+          meta = groupCache.get(id) || await getMetadata(id, xp),
+          txt = gcData?.filter?.left?.leftText?.trim() || `%user keluar dari grup ${meta?.subject || id}`
 
     return { txt }
   } catch (e) {

@@ -9,13 +9,48 @@ const sfg = {
 
 const th = { timer: 120000 }
 
-const file = path.join(dirname, '../temp/history_sambung_kata.json')
-
 let runTimerHistory = !1,
     runfarm = !1,
     thCache = null,
     thTick  = 0,
-    runRobberyCost = !1
+    runRobberyCost = !1,
+    rundeath = !1
+
+async function tmdead() {
+  if (rundeath) return
+  rundeath = !0
+
+  while (!0) {
+    let dbsv = !1
+
+    try {
+      const usrDb = Object.values(db().key),
+            now = Date.now()
+
+      for (const usr of usrDb) {
+        const kill = usr?.game?.kill,
+              last = kill?.reset || now,
+              diff = now - last
+
+        if (!kill) continue
+
+        if (kill.status !== !0 || diff < 36e5) continue
+
+        kill.status = !1
+        kill.reset = 0
+
+        dbsv = !0
+      }
+
+      if (dbsv || !1) save.db()
+
+    } catch (e) {
+      err('error pada tmdead', e)
+    }
+
+    await sfg.sleep(6e4)
+  }
+}
 
 async function cost_robbery() {
   if (runRobberyCost) return
@@ -43,7 +78,6 @@ async function cost_robbery() {
       if (dbsv) save.db()
     } catch (e) {
       err('error pada robberyCostLoop', e)
-      erl(e, 'robberyCostLoop')
     }
   }
 }
@@ -98,7 +132,6 @@ async function autofarm() {
 
     } catch (e) {
       err('error pada autofarm', e)
-      erl(e, 'autofarm')
     }
 
     await sfg.sleep(sfg.timer)
@@ -107,10 +140,126 @@ async function autofarm() {
 
 async function sambungkata(xp, m) {
   const chat = global.chat(m),
-        usr = Object.values(db().key).find(v => v.jid === chat.sender),
+        usr = get.db(chat.sender),
+        txt = chat.quoted.txt,
+        file = path.join(dirname, '../temp/sambungkata_hystory.json'),
+        data = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file)) : {},
+        now = Date.now(),
+        quoted = m.message?.extendedTextMessage?.contextInfo?.stanzaId
+
+  if (!txt || !usr) return
+  if (!quoted) return
+
+  let lastKey = null,
+      lastGame = null,
+      lastPlayerKey = null,
+      game = null
+
+  for (const key of Object.keys(data)) {
+    const g = data[key]
+    if (!g) continue
+
+    const players = Object.keys(g).filter(k => k !== 'reset'),
+          lp = players.slice(-1)[0],
+          gm = g[lp]
+
+    if (gm && gm.id === quoted) {
+      lastKey = key
+      lastGame = g
+      lastPlayerKey = lp
+      game = gm
+      break
+    }
+  }
+
+  if (!game) return fs.writeFileSync(file, JSON.stringify(data))
+
+  const players = Object.keys(lastGame).filter(k => k !== 'reset'),
+        last = players.slice(-1)[0],
+        lastTime = lastGame[last]?.time || 0,
+        resetTime = lastGame.reset || 0
+
+  if ((now - (lastTime || resetTime)) > 18e4) {
+    const lastPlayer = (lastPlayerKey?.split(':')[0] + '@s.whatsapp.net'),
+          winusr = get.db(lastPlayer)
+
+    let rewardText = `Waktu habis\nGame sambung kata berakhir`
+
+    if (winusr || !1) {
+      const base = 1e3,
+            bonus = Math.floor(base * .12),
+            total = base + bonus
+
+      winusr.moneyDb.money += total
+      winusr.exp += 1
+
+      rewardText += `\n\nPemenang: @${lastPlayer.split('@')[0]}`
+      rewardText += `\nUang: +${total}`
+      rewardText += `\nLevel: +1`
+    }
+
+    delete data[lastKey]
+    fs.writeFileSync(file, JSON.stringify(data))
+
+    return xp.sendMessage(chat.id, {
+      text: rewardText,
+      mentions: winusr ? [lastPlayer] : []
+    }, { quoted: m })
+  }
+
+  const first = txt[0],
+        val = game.val,
+        isUsed = Object.values(lastGame).some(v => typeof v === 'object' && v.key === txt)
+
+  if (isUsed || !1) {
+    return xp.sendMessage(chat.id, { text: `Kata *${txt}* sudah digunakan\nGunakan kata lain` }, { quoted: m })
+  }
+
+  if (first !== val || !1) {
+    return xp.sendMessage(chat.id, { text: `Salah\nHarus diawali huruf ${val}` }, { quoted: m })
+  }
+
+  const sender = chat.sender.split('@')[0],
+        lastSender = lastPlayerKey.split(':')[0]
+
+  if (lastSender === sender || !1) {
+    return xp.sendMessage(chat.id, { text: `Kamu sudah menjawab, tunggu yang lain` }, { quoted: m })
+  }
+
+  const lastChar = txt.slice(-1)
+
+  const res = await xp.sendMessage(chat.id, { text: `Benar\nKata: ${txt}\nLanjut huruf: ${lastChar}` }, { quoted: m })
+
+  const botId = res.key.id
+
+  let newKey = sender,
+      count = 0
+
+  while (lastGame[newKey]) {
+    count++
+    newKey = `${sender}:${count}`
+  }
+
+  lastGame[newKey] = {
+    id: botId,
+    key: txt,
+    val: lastChar,
+    time: +new Date
+  }
+
+  lastGame.reset = Date.now()
+
+  data[lastKey] = lastGame
+  fs.writeFileSync(file, JSON.stringify(data))
+}
+
+async function tebakkata(xp, m) {
+  const chat = global.chat(m),
+        usr = get.db(chat.sender),
         q = m.message?.extendedTextMessage?.contextInfo,
         jawaban = m.message?.conversation || m.message?.extendedTextMessage?.text,
-        idBot = xp.user?.id?.split(':')[0] + '@s.whatsapp.net'
+        idBot = xp.user?.id?.split(':')[0] + '@s.whatsapp.net',
+        file = path.join(dirname, '../temp/history_tebak_kata.json')
 
   if (!usr || !q?.stanzaId || !jawaban || q.participant !== idBot) return
 
@@ -132,11 +281,11 @@ async function sambungkata(xp, m) {
     return data.chance <= 0
       ? (
           data.status = !1,
-          await fs.promises.writeFile(file, JSON.stringify(history, null, 2)),
+          await fs.promises.writeFile(file, JSON.stringify(history)),
           xp.sendMessage(chat.id, { text:`Kesempatan habis!\nJawaban benar: *${data.key}*` }, { quoted:m })
         )
       : (
-          await fs.promises.writeFile(file, JSON.stringify(history, null, 2)),
+          await fs.promises.writeFile(file, JSON.stringify(history)),
           xp.sendMessage(chat.id, { text:`Jawaban salah!\nChance tersisa: ${data.chance}` }, { quoted:m })
         )
 
@@ -146,7 +295,7 @@ async function sambungkata(xp, m) {
   usr.moneyDb.moneyInBank += reward
   data.status = !1
 
-  await fs.promises.writeFile(file, JSON.stringify(history, null, 2))
+  await fs.promises.writeFile(file, JSON.stringify(history))
   save.db()
 
   return xp.sendMessage(chat.id, { text:`Jawaban benar!\nHadiah: Rp ${reward.toLocaleString('id-ID')}` }, { quoted:m })
@@ -205,4 +354,4 @@ function timerhistory(xp) {
 }
 
 
-export { autofarm, sambungkata, timerhistory, cost_robbery }
+export { tmdead, autofarm, sambungkata, tebakkata, timerhistory, cost_robbery }

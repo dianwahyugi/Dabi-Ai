@@ -24,6 +24,7 @@ function getMessageContent(m) {
     || msg?.documentMessage?.caption
     || msg?.questionMessage?.message?.extendedTextMessage?.text
     || msg?.pollCreationMessageV5?.correctAnswer?.optionName
+    || (msg?.call && 'seseorang menelpon')
     || (m.call && 'Panggilan telepon')
     || (msg?.reactionMessage &&
         `Bereaksi ${msg.reactionMessage.text} ke ${msg.reactionMessage.key?.participant?.replace(/@s\.whatsapp\.net$/, '')}`)
@@ -64,25 +65,27 @@ function getMessageContent(m) {
     || (vo && 'Sekali lihat')
 
   const mt = {
-    imageMessage: 'Gambar',
-    videoMessage: 'Video',
+    albumMessage: 'Album',
     audioMessage: 'Audio',
-    documentMessage: 'Dokumen',
-    stickerMessage: 'Stiker',
     contactMessage: `Kontak ${msg?.contactMessage?.displayName}`,
-    reactionMessage: 'Reaksi',
-    vo: 'Sekali lihat',
-    protocolMessage: 'Sistem',
+    documentMessage: 'Dokumen',
+    eventMessage: `Acara ${msg?.eventMessage?.name}`,
+    imageMessage: 'Gambar',
+    interactiveMessage: 'Button',
+    liveLocationMessage: 'Lokasi Live',
     locationMessage: 'Lokasi',
     pollCreationMessage: 'Polling',
     pollCreationMessageV3: 'Polling',
     pollCreationMessageV5: 'Polling',
     pollUpdateMessage: 'Memilih polling',
-    eventMessage: `Acara ${msg?.eventMessage?.name}`,
-    liveLocationMessage: 'Lokasi Live',
-    interactiveMessage: 'Button',
+    protocolMessage: 'Sistem',
     ptvMessage: 'Ptv',
-    questionMessage: 'Pertanyaan'
+    questionMessage: 'Pertanyaan',
+    reactionMessage: 'Reaksi',
+    stickerMessage: 'Stiker',
+    stickerPackMessage: 'Stiker Pack',
+    videoMessage: 'Video',
+    vo: 'Sekali lihat'
   }
 
   const mediaKey = Object.keys(msg || {}).find(k => mt[k])

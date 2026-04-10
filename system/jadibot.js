@@ -4,7 +4,7 @@ import path from 'path'
 import pino from 'pino'
 import { default as makeWASocket, useMultiFileAuthState, makeCacheableSignalKeyStore, fetchLatestBaileysVersion } from 'baileys'
 import { afk, cleanMsg, filter, filterMsg, getMetadata, replaceLid, saveLidCache } from './function.js'
-import { sambungkata } from './gamefunc.js'
+import { tebakkata, sambungkata } from './gamefunc.js'
 import { rct_key } from './reaction.js'
 import { signal } from '../cmd/interactive.js'
 import { handleCmd, ev } from '../cmd/handle.js'
@@ -91,7 +91,6 @@ async function evJadiBot(from) {
             num = prtNum || sendNum?.replace(/@s\.whatsapp\.net$/, '')
 
       m.key.jadibot = num === botId
-      log(m)
 
       const chat = global.chat(m, botName),
             time = global.time.timeIndo('Asia/Jakarta', 'HH:mm'),
@@ -102,7 +101,7 @@ async function evJadiBot(from) {
             { text, media } = getMessageContent(m),
             name = chat.pushName || chat.sender || chat.id,
             isMode = await mode(Xp, chat),
-            gcData = chat.group && getGc(chat)
+            gcData = chat.group && get.gc(chat.id)
 
       await rct_key(Xp, m)
 
@@ -136,6 +135,7 @@ async function evJadiBot(from) {
       await authFarm(m)
       await afk(Xp, m)
       await sambungkata(Xp, m)
+      await tebakkata(Xp, m)
 
       if (chat.group) {
         ft = await filter(Xp, m, text)
@@ -144,7 +144,8 @@ async function evJadiBot(from) {
           ft.antiTagSw(),
           ft.badword(),
           ft.antiCh(),
-          ft.antitag()
+          ft.antitag(),
+          ft.autoback()
         )
       }
 
@@ -186,7 +187,7 @@ async function evJadiBot(from) {
                   u.action === 'demote'  ? c.cyanBright.bold(`${phone} demoted in ${g}`) : ''
 
       if (u.action === 'add' || u.action === 'remove') {
-        const gcData = getGc({ id: u.id }),
+        const gcData = get.gc({ id: u.id }),
               isAdd = u.action === 'add',
               cfg = isAdd ? gcData?.filter?.welcome?.welcomeGc : gcData?.filter?.left?.leftGc
 
