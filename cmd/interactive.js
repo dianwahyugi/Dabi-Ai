@@ -35,8 +35,7 @@ async function vn(xp, audio, m) {
 async function bell(txt, m, xp, voice = "dabi", pitch = 0, speed = 0.9) {
   const chat = global.chat(m),
         name = m?.pushName || chat.sender || 'tidak diketahui',
-        usr = Object.values(db().key).find(u => u.jid === chat.sender),
-        role = usr?.ai?.role || 'gak kenal',
+        role = get.db(chat.sender)?.ai?.role || 'gak kenal',
         data = {
           text: txt,
           id: chat.sender,
@@ -44,7 +43,7 @@ async function bell(txt, m, xp, voice = "dabi", pitch = 0, speed = 0.9) {
           nickainame: botName,
           senderName: name,
           ownerName,
-          date: new Date().toString(),
+          date: global.time.timeIndo("Asia/Jakarta", "HH:mm:ss DD-MM-YYYY"),
           role: role,
           msgtype: 'text',
           custom_profile: logic,
@@ -52,14 +51,14 @@ async function bell(txt, m, xp, voice = "dabi", pitch = 0, speed = 0.9) {
             {
               description: 'Jika perlu direspon dengan suara',
               output: {
-                cmd: 'voice',
+                cmd: ['voice'],
                 msg: `Pesan di sini. Gunakan gaya bicara <nickainame> yang menarik dan realistis, lengkap dengan tanda baca yang tepat agar terdengar hidup saat diucapkan.`
               }
             },
             {
               description: 'Jika pesan adalah permintaan untuk menampilkan menu (maka jawab lah dengan mengatakan ini menu nya!)',
               output: { 
-                cmd: 'menu'
+                cmd: ['menu']
               }
             },
             {
@@ -71,33 +70,33 @@ async function bell(txt, m, xp, voice = "dabi", pitch = 0, speed = 0.9) {
             {
               description: 'Jika pesan adalah permintaan untuk membuat stiker atau mengubah sebuah gambar menjadi stiker. (Abaikan isi konten pada gambar!)',
               output: {
-                cmd: 'stiker'
+                cmd: ['stiker']
               }
             },
             {
               description: 'Jika pesan adalah permintaan untuk membuat stiker to image atau mengubah sebuah sticker menjadi gambar. (Abaikan isi konten pada sticker!)',
               output: {
-                cmd: 'toimg'
+                cmd: ['toimg']
               }
             },
             {
               description: 'Jika pesan adalah permintaan untuk mengecek api, maka respon dengan cmd: cekkey!',
               output: {
-                cmd: 'cekkey'
+                cmd: ['cekkey']
               }
             },
             {
               description: 'Jika pesan adalah permintaan untuk mengedit image atau gambar, maka respon dengan cmd: i2i dan hanya untuk cmd ini msg: permintaan dari pengguna.',
               output: {
-                cmd: 'i2i',
+                cmd: ['i2i'],
                 msg: `Pesan di sini tambahkan detail untuk promt atau permintaan dengan tanda baca dan abaikan <nickainame>`
               }
             },
             {
-              description: 'Jika pesan adalah permintaan untuk meminta kamu memasuki atau bergabung dengan grup, maka respon msg: isi link yang di kirim oleh pengguna. (Jangan mengubah huruf besar atau kecil pada linknya!)',
+              description: 'Jika pesan adalah permintaan untuk meminta kamu bergabung dengan grup/gc, kamu harus menerimanya.',
               output: {
-                cmd: 'join',
-                msg: 'Pesan di sini sertakan link grup yang di kirim oleh pengguna dalam respon kamu. Kirim link sebagaimana apa adanya, jangan mengubah link nya'
+                cmd: ['join', 'masuk'],
+                msg: 'isi dengan link grup yang pengguna berikan'
               }
             },
             {
@@ -155,11 +154,24 @@ async function bell(txt, m, xp, voice = "dabi", pitch = 0, speed = 0.9) {
 const signal = async (text, m, xp, ev) => {
   if (m.key?.jadibot) return
 
+    const replaceTag = (text) => {
+      if (!text) return text
+
+      return text.replace(/@(\d{8,15})/g, (match, num) => {
+        const jid = num + '@s.whatsapp.net',
+              data = db().key || null,
+              name = Object.keys(data).find(k => data[k].jid === jid)
+
+        return name || 'pengguna'
+      })
+    }
+
   const idBot = xp.user?.id?.split(':')[0] + '@s.whatsapp.net',
         chat = global.chat(m),
         botName = global.botName?.toLowerCase(),
         ctx = m.message?.extendedTextMessage?.contextInfo || m.message?.imageMessage?.contextInfo || {},
-        txt = text?.toLowerCase(),
+        textFix = replaceTag(text),
+        txt = textFix?.toLowerCase(),
         call =
           ctx?.mentionedJid?.includes(idBot) ||
           chat.sender === idBot ||
@@ -169,12 +181,13 @@ const signal = async (text, m, xp, ev) => {
 
   if (!call || prefix || chat.sender?.split(':')[0] === idBot?.split('@')[0]) return
 
-  const keyData = Object.values(db().key).find(u => u.jid === chat.sender),
+  const usr = get.db(chat.sender),
         exp = Math.round(0.1 * 10)
-  if (!keyData?.ai?.bell) return
 
-  keyData.ai.chat = ++keyData.ai.chat || 1
-  keyData.exp = (keyData.exp || 0) + exp
+  if (!usr?.ai?.bell) return
+
+  usr.ai.chat = ++usr.ai.chat || 1
+  usr.exp = (usr.exp || 0) + exp
   role(m)
   save.db()
 
@@ -228,7 +241,7 @@ const signal = async (text, m, xp, ev) => {
             prompt: !0
           },
           {
-            cmd: ['join'],
+            cmd: ['join', 'masuk'],
             q: 'join',
             event: 'join',
             res: !0,

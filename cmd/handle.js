@@ -3,7 +3,7 @@ import fs from "fs"
 import p from "path"
 import EventEmitter from "events"
 import getMessageContent from '../system/msg.js'
-import { authUser, role } from '../system/db/data.js'
+import { role } from '../system/db/data.js'
 import { own } from '../system/helper.js'
 import { cekSpam, _tax } from '../system/function.js'
 import { ocrs } from './ocrs.js'
@@ -196,8 +196,7 @@ const handleCmd = async (m, xp, store) => {
 
     const chat = global.chat(m),
           sender = chat.sender?.replace(/@s\.whatsapp\.net$/, ''),
-          usr = Object.values(db().key).find(u => u.jid === chat.sender),
-          ownerNum = [].concat(global.ownerNumber).map(n => n?.replace(/[^0-9]/g, '')),
+          usr = get.db(chat.sender),
           evData = ev.cmd?.find(e =>
             e.name?.toLowerCase() === _cmdLow ||
             e.cmd?.some(c => c.toLowerCase() === _cmdLow)
@@ -215,9 +214,7 @@ const handleCmd = async (m, xp, store) => {
       }
     }
 
-    await authUser(m)
-
-    if (!usr ? (xp.sendMessage(chat.id, { text: 'ulangi' }, { quoted: m }), true) : ((!global.public || evData.owner) && !ownerNum.includes(sender)) ? true : await cekSpam(xp, m)) return
+    if (!usr ? (xp.sendMessage(chat.id, { text: 'ulangi' }, { quoted: m }), !0) : await cekSpam(xp, m)) return
 
     const exp = evData.exp ?? 0.1,
           expInt = Math.round(exp * 10)
