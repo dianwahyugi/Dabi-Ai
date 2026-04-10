@@ -8,9 +8,9 @@ import { makeWASocket, useMultiFileAuthState } from 'baileys'
 import { handleCmd, loadAll, ev } from './cmd/handle.js'
 import { signal } from './cmd/interactive.js'
 import { evConnect, handleSessi } from './connect/evConnect.js'
-import { autofarm, sambungkata, timerhistory, cost_robbery } from './system/gamefunc.js'
+import { tmdead, autofarm, sambungkata, tebakkata, timerhistory, cost_robbery } from './system/gamefunc.js'
 import getMessageContent from './system/msg.js'
-import { authFarm } from './system/db/data.js'
+import { authFarm, authUser } from './system/db/data.js'
 import { rct_key } from './system/reaction.js'
 import { txtWlc, txtLft, mode, banned, bangc } from './system/sys.js'
 import { getMetadata, replaceLid, saveLidCache, cleanMsg, filter, imgCache, _imgTmp, afk, filterMsg } from './system/function.js'
@@ -64,6 +64,7 @@ const startBot = async () => {
     autofarm()
     timerhistory(xp)
     cost_robbery()
+    tmdead()
 
     xp.ev.on('messages.upsert', async ({ messages }) => {
       for (let m of messages) {
@@ -73,16 +74,17 @@ const startBot = async () => {
         m = cleanMsg(m)
         m = replaceLid(m)
 
-        const chat = global.chat(m, botName),
+        const { text, media } = getMessageContent(m),
+              chat = global.chat(m, botName),
               time = global.time.timeIndo('Asia/Jakarta', 'HH:mm'),
               meta = chat.group
                 ? (groupCache.get(chat.id) || await getMetadata(chat.id, xp) || {})
                 : {},
               groupName = chat.group ? meta?.subject || 'Grup' : chat.channel ? chat.id : '',
-              { text, media } = getMessageContent(m),
               name = chat.pushName || chat.sender || chat.id,
               isMode = await mode(xp, chat),
-              gcData = chat.group && getGc(chat)
+              gcData = chat.group && get.gc(chat.id),
+              ownerNum = [].concat(global.ownerNumber).map(n => n?.replace(/[^0-9]/g, ''))
 
         await rct_key(xp, m)
 
@@ -109,12 +111,12 @@ const startBot = async () => {
           )
         )
 
-        if (banned(chat)) return log(c.yellowBright.bold(`${chat.sender} diban`))
-        if (chat.group && bangc(chat)) return
-        if (!(await filterMsg(m, chat, text))) return
+        if (banned(chat) ? (log(c.yellowBright.bold(`${chat.sender} diban`)), !0) : chat.group && bangc(chat) ? !0 : !(await filterMsg(m, chat, text)) ? !0 : ((!global.public) && !ownerNum.includes(chat.sender?.replace(/@s\.whatsapp\.net$/, ''))) ? !0 : !isMode) return
 
+        await authUser(m)
         await authFarm(m)
         await afk(xp, m)
+        await tebakkata(xp, m)
         await sambungkata(xp, m)
 
         if (chat.group) {
@@ -124,11 +126,10 @@ const startBot = async () => {
             ft.antiTagSw(),
             ft.badword(),
             ft.antiCh(),
-            ft.antitag()
+            ft.antitag(),
+            ft.autoback()
           )
         }
-
-        if (!isMode) return
 
         if (gcData) {
           const { usrAdm, botAdm } = await grupify(xp, m)
@@ -162,19 +163,30 @@ const startBot = async () => {
                     u.action === 'demote'  ? c.cyanBright.bold(`${phone} demoted in ${g}`) : ''
 
         if (u.action === 'add' || u.action === 'remove') {
-          const gcData = getGc({ id: u.id }),
+          const gcData = get.gc(u.id),
                 isAdd = u.action === 'add',
                 cfg = isAdd ? gcData?.filter?.welcome?.welcomeGc : gcData?.filter?.left?.leftGc
 
           if (!gcData || !cfg) return
 
-          const id = { id: u.id },
-                { txt } = await (isAdd ? txtWlc : txtLft)(xp, id),
+          const { txt } = await (isAdd ? txtWlc : txtLft)(xp, u.id),
                 jid = pid.phoneNumber || idToPhone[pid],
                 mention = '@' + (jid?.split('@')[0] || jid),
-                text = txt.replace(/@user|%user/gi, mention)
+                text = txt.replace(/@user|%user/gi, mention),
+                ppgc = await xp.profilePictureUrl(u.id, 'image')
 
-          await xp.sendMessage(u.id, { text, mentions: [jid] })
+          await xp.sendMessage(u.id, {
+            text,
+            mentions: [jid],
+            contextInfo: {
+              externalAdReply: {
+                body: `${g}`,
+                thumbnailUrl: ppgc,
+                mediaType: 1,
+                renderLargerThumbnail: !0
+              }
+            }
+          })
         }
       }
     })
