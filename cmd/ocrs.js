@@ -11,7 +11,7 @@ const getSetList = () => {
   }
 }
 
-async function ocrs(xp, m) {
+async function ocrs(sock, m) {
   try {
     const { text } = getMessageContent(m),
           chat = global.chat(m),
@@ -28,7 +28,7 @@ async function ocrs(xp, m) {
         .sort()
         .join('\n') || '-'
 
-      return xp.sendMessage(chat.id, { text: `list menu set:\n${list}` }, { quoted: m })
+      return sock.sendMessage(chat.id, { text: `list menu set:\n${list}` }, { quoted: m })
     }
 
     if (!target) return listMenu()
@@ -53,7 +53,7 @@ async function ocrs(xp, m) {
 
     const newText = `${pre}${realCmd} ${ocrsAction} ${args.join(' ')}`.trim()
 
-    ev.emit(realCmd, xp, m, {
+    ev.emit(realCmd, sock, m, {
       args,
       chat,
       text: newText,

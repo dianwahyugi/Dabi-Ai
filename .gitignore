@@ -24,4 +24,6 @@ hs_err_pid*
 replay_pid*
 /node_modules
 package-lock.json
-/connect/session
+/connect/*
+system/db/*.json
+/temp

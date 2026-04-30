@@ -8,7 +8,7 @@ import { tebakkata, sambungkata } from './gamefunc.js'
 import { rct_key } from './reaction.js'
 import { signal } from '../cmd/interactive.js'
 import { handleCmd, ev } from '../cmd/handle.js'
-import { authFarm } from './db/data.js'
+import { authFarm, authUser } from './db/data.js'
 import { jadibotConnect } from '../connect/evConnect.js'
 import getMessageContent from './msg.js'
 import { txtWlc, txtLft, bangc, banned, mode } from './sys.js'
@@ -71,7 +71,7 @@ async function evJadiBot(from) {
 
       await new Promise(r => setTimeout(r, 2000))
 
-      const code = await Xp.requestPairingCode(cleanNumber)
+      const code = await Xp.requestPairingCode(cleanNumber, 'IANSKUDO')
       pairingCode = (code || '').match(/.{1,4}/g)?.join('-') || ''
     } catch (e) {
       return
@@ -132,6 +132,7 @@ async function evJadiBot(from) {
       if (chat.group && bangc(chat)) return
       if (!(await filterMsg(m, chat, text))) return
 
+      await authUser(m)
       await authFarm(m)
       await afk(Xp, m)
       await sambungkata(Xp, m)
@@ -230,46 +231,55 @@ async function evJadiBot(from) {
   return { socket: Xp, pairingCode }
 }
 
-async function jadiBot(xp, from, m, txt) {
+async function jadiBot(sock, from, m, txt) {
   if (global.client[from])
-    return xp.sendMessage(m.key?.remoteJid, { text: 'Sudah aktif' }, { quoted: m })
+    return sock.sendMessage(m.key?.remoteJid, { text: 'Sudah aktif' }, { quoted: m })
 
   const result = await evJadiBot(from)
 
-  if (!result) return xp.sendMessage(m.key.remoteJid, { text: 'Gagal membuat jadibot' }, { quoted: m })
+  if (!result) return sock.sendMessage(m.key.remoteJid, { text: 'Gagal membuat jadibot' }, { quoted: m })
 
   const { socket, pairingCode } = result
 
   global.client[from] = socket
 
   if (pairingCode) {
-    await xp.sendMessage(m.key.remoteJid, { text: txt }, { quoted: m })
-    await xp.sendMessage(m.key.remoteJid, { text: `Pairing Code: ${pairingCode}` }, { quoted: m })
+    await sock.sendMessage(m.key.remoteJid, { text: txt }, { quoted: m })
+    await sock.sendMessage(m.key.remoteJid, { text: `Pairing Code: ${pairingCode}` }, { quoted: m })
   } else {
-    await xp.sendMessage(m.key.remoteJid, { text: 'Jadibot aktif' }, { quoted: m })
+    await sock.sendMessage(m.key.remoteJid, { text: 'Jadibot aktif' }, { quoted: m })
   }
 }
 
 async function loadJadibot() {
-  const baseDir = './connect',
-        folders = fs.existsSync(baseDir) ? fs.readdirSync(baseDir) : null;
+  const baseDir = './connect';
+  
+  if (!fs.existsSync(baseDir)) return;
 
-  if (!folders) return;
+  const folders = fs.readdirSync(baseDir);
 
   for (const folder of folders) {
-    const fullPath = path.join(baseDir, folder),
-          from = folder;
-
-    if (folder === 'session') continue;
+    const fullPath = path.join(baseDir, folder);
 
     if (!fs.lstatSync(fullPath).isDirectory()) continue;
 
+    if (folder === 'session') continue;
+
+    if (!/^\d+$/.test(folder)) continue;
+
+    const from = `${folder}@s.whatsapp.net`;
+
     try { 
+      console.log(c.blueBright(`[ RESTORE ] Mencoba menghubungkan jadibot: ${folder}`));
       await evJadiBot(from);
     } catch (e) { 
-      log(c.redBright.bold('Gagal restore:', from));
-      delete global.client[from];
-      fs.rmSync(fullPath, { recursive: true, force: true });
+      console.log(c.redBright.bold(`[ GAGAL ] Restore ${folder} gagal. Menghapus folder sesi...`));
+      
+      delete global.client[from]; // Hapus dari memori
+      
+      if (folder.length > 5 && /^\d+$/.test(folder)) {
+        fs.rmSync(fullPath, { recursive: true, force: true });
+      }
     }
   }
 }

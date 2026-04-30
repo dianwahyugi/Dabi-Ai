@@ -1,10 +1,11 @@
 import './system/global.js'
+import  './system/clean.js'
 import c from 'chalk'
 import fs from 'fs'
 import path from 'path'
 import pino from 'pino'
 import readline from 'readline'
-import { makeWASocket, useMultiFileAuthState } from 'baileys'
+import { makeWASocket, useMultiFileAuthState, jidNormalizedUser } from 'baileys'
 import { handleCmd, loadAll, ev } from './cmd/handle.js'
 import { signal } from './cmd/interactive.js'
 import { evConnect, handleSessi } from './connect/evConnect.js'
@@ -14,6 +15,7 @@ import { authFarm, authUser } from './system/db/data.js'
 import { rct_key } from './system/reaction.js'
 import { txtWlc, txtLft, mode, banned, bangc } from './system/sys.js'
 import { getMetadata, replaceLid, saveLidCache, cleanMsg, filter, imgCache, _imgTmp, afk, filterMsg } from './system/function.js'
+import { handleStatus } from './system/status.js'
 
 global.rl = readline.createInterface({ input: process.stdin, output: process.stdout })
 global.q = (t) => new Promise((r) => rl.question(t, r))
@@ -22,7 +24,7 @@ global.lidCache = {}
 const logLevel = pino({ level: 'silent' }),
       tempDir = path.join(dirname, '../temp')
 
-let xp,
+let sock,
     ft
 
 if (!imgCache.url) await _imgTmp()
@@ -33,7 +35,7 @@ setInterval(() => console.clear(), 6e5)
 const startBot = async () => {
   try {
     const { state, saveCreds } = await useMultiFileAuthState('./connect/session')
-    xp = makeWASocket({
+    sock = makeWASocket({
       auth: state,
       version: [2, 3000, 1033936837],
       printQRInTerminal: !1,
@@ -42,13 +44,14 @@ const startBot = async () => {
       browser: ['Ubuntu', 'Chrome', '20.0.04']
     })
 
-    xp.ev.on('creds.update', saveCreds)
-    xp.reactionCache ??= new Map();
+
+    sock.ev.on('creds.update', saveCreds)
+    sock.reactionCache ??= new Map();
 
     if (!state.creds?.me?.id) {
       try {
         const num  = await q(c.blueBright.bold('Nomor: ')),
-              code = await xp.requestPairingCode(await global.number(num)),
+              code = await sock.requestPairingCode(await global.number(num), 'IANSKUDO'),
               show = (code || '').match(/.{1,4}/g)?.join('-') || ''
         log(c.greenBright.bold('Pairing Code:'), c.cyanBright.bold(show))
       } catch (e) {
@@ -59,15 +62,19 @@ const startBot = async () => {
     }
 
     rl.close()
-    evConnect(xp, startBot)
-    store.bind(xp.ev)
+    evConnect(sock, startBot)
+    store.bind(sock.ev)
     autofarm()
-    timerhistory(xp)
+    timerhistory(sock)
     cost_robbery()
     tmdead()
 
-    xp.ev.on('messages.upsert', async ({ messages }) => {
+    sock.ev.on('messages.upsert', async ({ messages }) => {
       for (let m of messages) {
+        if (m.key && m.key.remoteJid === 'status@broadcast') {
+                    await handleStatus(sock, m);
+                    continue; 
+                }
         if (m?.message?.messageContextInfo?.deviceListMetadata && !Object.keys(m.message).some(k => k === 'conversation' || k === 'extendedTextMessage')) continue
         if (m.key?.jadibot) continue
 
@@ -78,16 +85,18 @@ const startBot = async () => {
               chat = global.chat(m, botName),
               time = global.time.timeIndo('Asia/Jakarta', 'HH:mm'),
               meta = chat.group
-                ? (groupCache.get(chat.id) || await getMetadata(chat.id, xp) || {})
+                ? (groupCache.get(chat.id) || await getMetadata(chat.id, sock) || {})
                 : {},
               groupName = chat.group ? meta?.subject || 'Grup' : chat.channel ? chat.id : '',
               name = chat.pushName || chat.sender || chat.id,
-              isMode = await mode(xp, chat),
+              isMode = await mode(sock, chat),
               gcData = chat.group && get.gc(chat.id),
               ownerNum = [].concat(global.ownerNumber).map(n => n?.replace(/[^0-9]/g, ''))
 
-        await rct_key(xp, m)
+        await rct_key(sock, m)
 
+        if (global.msgAutoread) await sock.readMessages([m.key]).catch(() => {});
+        
         if (chat.group && Object.keys(meta).length) { await saveLidCache(meta) }
 
         log(
@@ -115,12 +124,12 @@ const startBot = async () => {
 
         await authUser(m)
         await authFarm(m)
-        await afk(xp, m)
-        await tebakkata(xp, m)
-        await sambungkata(xp, m)
+        await afk(sock, m)
+        await tebakkata(sock, m)
+        await sambungkata(sock, m)
 
         if (chat.group) {
-          ft = await filter(xp, m, text)
+          ft = await filter(sock, m, text)
           ft && (
             ft.antiLink(),
             ft.antiTagSw(),
@@ -132,26 +141,26 @@ const startBot = async () => {
         }
 
         if (gcData) {
-          const { usrAdm, botAdm } = await grupify(xp, m)
+          const { usrAdm, botAdm } = await grupify(sock, m)
           if (gcData.filter?.mute && !usrAdm) return !1
         }
 
         if (text || media) {
-          xp.reactionCache.set(m.key?.id, m)
-          setTimeout(() => xp.reactionCache.delete(m.key?.id), 18e5)
+          sock.reactionCache.set(m.key?.id, m)
+          setTimeout(() => sock.reactionCache.delete(m.key?.id), 18e5)
         }
 
-        if (text) await signal(text, m, xp, ev)
+        if (text) await signal(text, m, sock, ev)
 
-        await handleCmd(m?.key ? m : null, xp, store)
+        await handleCmd(m?.key ? m : null, sock, store)
       }
     })
 
-    xp.ev.on('group-participants.update', async u => {
+    sock.ev.on('group-participants.update', async u => {
       if (!u.id) return
       groupCache.delete(u.id)
 
-      const meta = await getMetadata(u.id, xp),
+      const meta = await getMetadata(u.id, sock),
             g = meta?.subject || 'Grup',
             idToPhone = Object.fromEntries((meta?.participants || []).map(p => [p.id, p.phoneNumber]))
 
@@ -169,13 +178,13 @@ const startBot = async () => {
 
           if (!gcData || !cfg) return
 
-          const { txt } = await (isAdd ? txtWlc : txtLft)(xp, u.id),
+          const { txt } = await (isAdd ? txtWlc : txtLft)(sock, u.id),
                 jid = pid.phoneNumber || idToPhone[pid],
                 mention = '@' + (jid?.split('@')[0] || jid),
                 text = txt.replace(/@user|%user/gi, mention),
-                ppgc = await xp.profilePictureUrl(u.id, 'image')
+                ppgc = await sock.profilePictureUrl(u.id, 'image')
 
-          await xp.sendMessage(u.id, {
+          await sock.sendMessage(u.id, {
             text,
             mentions: [jid],
             contextInfo: {
@@ -191,12 +200,12 @@ const startBot = async () => {
       }
     })
 
-    xp.ev.on('groups.update', u => 
+    sock.ev.on('groups.update', u => 
       u.forEach(async v => {
         if (!v.id) return
         groupCache.delete(v.id)
 
-        const m = await getMetadata(v.id, xp).catch(() => ({})),
+        const m = await getMetadata(v.id, sock).catch(() => ({})),
               a = v.participantAlt || v.participant || v.author,
               f = a && m?.participants?.length ? m.participants.find(p => p.id === a) : 0
         v.author = f?.phoneNumber || a

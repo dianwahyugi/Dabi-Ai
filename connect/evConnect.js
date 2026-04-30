@@ -56,8 +56,8 @@ const tryReconnect = async restart => {
   await handleSessi('Session bermasalah', restart)
 }
 
-function evConnect(xp, restart) {
-  xp.ev.on('connection.update', async ({ connection, lastDisconnect }) => {
+function evConnect(sock, restart) {
+  sock.ev.on('connection.update', async ({ connection, lastDisconnect }) => {
     if (connection === 'close') {
       const r = lastDisconnect?.error?.output?.statusCode
       log(c.redBright.bold('Koneksi tertutup, status:', r))
@@ -84,7 +84,6 @@ function evConnect(xp, restart) {
     if (connection === 'open') {
       log(c.greenBright.bold('Terhubung'))
       retryCount = 0
-
       try {
         await loadJadibot()
       } catch (e) {

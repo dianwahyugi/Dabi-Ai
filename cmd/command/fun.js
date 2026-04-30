@@ -12,7 +12,7 @@ export default function fun(ev) {
     money: 100,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       args,
       chat,
       cmd,
@@ -21,12 +21,12 @@ export default function fun(ev) {
       try {
         const nama = args.join(' ')
 
-        if (!nama) return xp.sendMessage(chat.id, { text: `masukan nama contoh:\n${prefix}${cmd} ${botName}` }, { quoted: m })
+        if (!nama) return sock.sendMessage(chat.id, { text: `masukan nama contoh:\n${prefix}${cmd} ${botName}` }, { quoted: m })
 
         const text = `jelaskan arti nama ${nama}. Ingat, nama orang`,
               url = await fetch(`${termaiWeb}/api/chat/bard?query=${encodeURIComponent(text)}&key=${termaiKey}`).then(r => r.json())
 
-        if (!url.status) return xp.sendMessage(chat.id, { text: 'status api false' }, { quoted: m })
+        if (!url.status) return sock.sendMessage(chat.id, { text: 'status api false' }, { quoted: m })
 
         let txt = `${head}${opb} *A R T I  N A M A* ${clb}\n`
             txt += `${body} ${btn} *Nama:* ${nama}\n`
@@ -35,10 +35,10 @@ export default function fun(ev) {
             txt += `${readmore}\n`
             txt += `${url?.chatUi}`
 
-        await xp.sendMessage(chat.id, { text: txt }, { quoted: m })
+        await sock.sendMessage(chat.id, { text: txt }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -53,7 +53,7 @@ export default function fun(ev) {
     money: 100,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       chat,
       cmd
     }) => {
@@ -70,10 +70,10 @@ export default function fun(ev) {
                   persen <= 93 ? 'bidadari cuy' : 'cantik banget',
             teks = `@${target} ${persen}%\n${txt}`
 
-        await xp.sendMessage(chat.id, { text: teks, mentions: [user] }, { quoted: m })
+        await sock.sendMessage(chat.id, { text: teks, mentions: [user] }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -88,7 +88,7 @@ export default function fun(ev) {
     money: 1,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       chat,
       cmd
     }) => {
@@ -96,16 +96,16 @@ export default function fun(ev) {
         const q = chat.quoted.id?.[0] || chat.sender,
               usr = get.db(q)
 
-        if (!usr) return xp.sendMessage(chat.id, { text: 'pengguna belum terdaftar di database' }, { quoted: m })
+        if (!usr) return sock.sendMessage(chat.id, { text: 'pengguna belum terdaftar di database' }, { quoted: m })
 
         const mny = usr?.moneyDb?.money ?? 0,
               fmny = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR'}).format(mny),
               txt = `Hasil investigasi dari dompet @${chat.sender.replace(/@s\.whatsapp\.net$/, '')}\n${fmny} ditemukan`
 
-        await xp.sendMessage(chat.id, { text: txt, mentions: [usr.jid] }, { quoted: m })
+        await sock.sendMessage(chat.id, { text: txt, mentions: [usr.jid] }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -120,7 +120,7 @@ export default function fun(ev) {
     money: 100,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       chat,
       cmd
     }) => {
@@ -133,10 +133,10 @@ export default function fun(ev) {
         let teks = `Top 10 dosa besar @${user}\n`
         listDosa.forEach((d, i) => teks += `${i + 1}. ${d}\n`)
 
-        await xp.sendMessage(chat.id, { text: teks.trim(), mentions: [q] }, { quoted: m })
+        await sock.sendMessage(chat.id, { text: teks.trim(), mentions: [q] }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -151,7 +151,7 @@ export default function fun(ev) {
     money: 100,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       chat,
       cmd
     }) => {
@@ -168,10 +168,10 @@ export default function fun(ev) {
                   persen <= 93 ? 'fiks femboy' : 'femboy out aja',
             teks = `@${target} ${persen}% ${txt}`
 
-        await xp.sendMessage(chat.id, { text: teks, mentions: [user] }, { quoted: m })
+        await sock.sendMessage(chat.id, { text: teks, mentions: [user] }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })  
@@ -186,7 +186,7 @@ export default function fun(ev) {
     money: 100,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       chat,
       cmd
     }) => {
@@ -203,10 +203,10 @@ export default function fun(ev) {
                   persen <= 93 ? 'thomas cuy' : 'ganteng banget',
             teks = `@${target} ${persen}%\n${txt}`
 
-        await xp.sendMessage(chat.id, { text: teks, mentions: [user] }, { quoted: m })
+        await sock.sendMessage(chat.id, { text: teks, mentions: [user] }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -221,7 +221,7 @@ export default function fun(ev) {
     money: 100,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       chat,
       cmd
     }) => {
@@ -237,10 +237,10 @@ export default function fun(ev) {
                                      'IQ jenius tingkat dewa',
               teks = `@${target} IQ kamu *${persen}*\n${txt}`
 
-        await xp.sendMessage(chat.id, { text: teks, mentions: [user] }, { quoted: m })
+        await sock.sendMessage(chat.id, { text: teks, mentions: [user] }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -255,19 +255,19 @@ export default function fun(ev) {
     money: 105,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       chat,
       cmd
     }) => {
       try {
-        if (!chat.group) return xp.sendMessage(chat.id, { text: 'fitur ini hanya bisa digunakan di grup' }, { quoted: m })
+        if (!chat.group) return sock.sendMessage(chat.id, { text: 'fitur ini hanya bisa digunakan di grup' }, { quoted: m })
 
         const usr = chat.quoted.id,
-              metadata = groupCache.get(chat.id) || await xp.groupMetadata(chat.id)
+              metadata = groupCache.get(chat.id) || await sock.groupMetadata(chat.id)
 
         if (!metadata) throw new Error('gagal mengambil metadata')
 
-        const target = metadata.participants.map(v => v.id).filter(id => id !== xp.user.id)
+        const target = metadata.participants.map(v => v.id).filter(id => id !== sock.user.id)
 
         const mention = Array.isArray(usr) ? usr
                       : usr ? [usr]
@@ -294,10 +294,10 @@ export default function fun(ev) {
               name2 = tgr2.split('@')[0],
               teks = `@${name1} ❤️ @${name2} ${persen}% ${cnd}`
 
-        await xp.sendMessage(chat.id, { text: teks, mentions: [tgr1, tgr2] }, { quoted: m })
+        await sock.sendMessage(chat.id, { text: teks, mentions: [tgr1, tgr2] }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -312,7 +312,7 @@ export default function fun(ev) {
     money: 100,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       chat,
       cmd
     }) => {
@@ -329,10 +329,10 @@ export default function fun(ev) {
                   persen <= 93 ? 'fiks gay' : 'orang jomok',
             teks = `@${target} ${persen}% ${txt}`
 
-        await xp.sendMessage(chat.id, { text: teks, mentions: [user] }, { quoted: m })
+        await sock.sendMessage(chat.id, { text: teks, mentions: [user] }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -347,7 +347,7 @@ export default function fun(ev) {
     money: 100,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       chat,
       cmd
     }) => {
@@ -364,10 +364,10 @@ export default function fun(ev) {
                   persen <= 93 ? 'fiks lesbi' : 'orang gila',
             teks = `@${target} ${persen}%\n${txt}`
 
-        await xp.sendMessage(chat.id, { text: teks, mentions: [user] }, { quoted: m })
+        await sock.sendMessage(chat.id, { text: teks, mentions: [user] }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -382,7 +382,7 @@ export default function fun(ev) {
     money: 100,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       chat,
       cmd
     }) => {
@@ -400,10 +400,10 @@ export default function fun(ev) {
                   persen <= 93 ? 'fiks cabul' : 'orang gila',
             teks = `@${mention} ${persen}% ${txt}`
 
-        await xp.sendMessage(chat.id, { text: teks, mentions: [user] }, { quoted: m })
+        await sock.sendMessage(chat.id, { text: teks, mentions: [user] }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -418,7 +418,7 @@ export default function fun(ev) {
     money: 100,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       chat,
       cmd
     }) => {
@@ -435,10 +435,10 @@ export default function fun(ev) {
                   persen <= 93 ? 'pedo,\nlapor fbi' : 'orang gila',
             teks = `@${target} ${persen}%\n${txt}`
 
-        await xp.sendMessage(chat.id, { text: teks, mentions: [user] }, { quoted: m })
+        await sock.sendMessage(chat.id, { text: teks, mentions: [user] }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -453,7 +453,7 @@ export default function fun(ev) {
     money: 100,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       chat,
       cmd
     }) => {
@@ -466,10 +466,10 @@ export default function fun(ev) {
 
         let teks = `@${target}\nSifat kamu: *${sifat}*`
 
-        await xp.sendMessage(chat.id, { text: teks, mentions: [user] }, { quoted: m })
+        await sock.sendMessage(chat.id, { text: teks, mentions: [user] }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -484,22 +484,22 @@ export default function fun(ev) {
     money: 100,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       chat,
       cmd,
       prefix
     }) => {
       try {
-         if (!chat.group) return xp.sendMessage(chat.id, { text: 'perintah ini hanya bisa digunakan digrup' }, { quoted: m })
+         if (!chat.group) return sock.sendMessage(chat.id, { text: 'perintah ini hanya bisa digunakan digrup' }, { quoted: m })
 
           const q = chat.quoted.id?.[0]
 
-          if (!q) return xp.sendMessage(chat.id, { text: `reply atau tag target` }, { quoted: m })
+          if (!q) return sock.sendMessage(chat.id, { text: `reply atau tag target` }, { quoted: m })
 
-          await xp.sendMessage(chat.id, { text: `@${q.replace(/@s\.whatsapp\.net$/, '')} telah di claim oleh @${chat.sender.replace(/@s\.whatsapp\.net$/, '')} `, mentions: [q, chat.sender] }, { quoted: m })
+          await sock.sendMessage(chat.id, { text: `@${q.replace(/@s\.whatsapp\.net$/, '')} telah di claim oleh @${chat.sender.replace(/@s\.whatsapp\.net$/, '')} `, mentions: [q, chat.sender] }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -514,7 +514,7 @@ export default function fun(ev) {
     money: 1000,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       args,
       chat,
       cmd,
@@ -544,9 +544,9 @@ export default function fun(ev) {
         ],
               vnTxt = vnList.map(v => `- ${v}`).join('\n')
 
-        if (args.length < 2) return xp.sendMessage(chat.id, { text: `contoh penggunaan:\n${prefix}${cmd} <voice> <text>\ndaftar voice:\n${vnTxt}` }, { quoted: m })
+        if (args.length < 2) return sock.sendMessage(chat.id, { text: `contoh penggunaan:\n${prefix}${cmd} <voice> <text>\ndaftar voice:\n${vnTxt}` }, { quoted: m })
 
-        await xp.sendMessage(chat.id, { react: { text: '⏳', key: m.key } })
+        await sock.sendMessage(chat.id, { react: { text: '⏳', key: m.key } })
 
         const [vnRaw, ...txtPart] = args,
               vnLow = vnRaw.toLowerCase(),
@@ -556,16 +556,16 @@ export default function fun(ev) {
               url = await fetch(`${termaiWeb}/api/text2speech/elevenlabs?text=${encodeURIComponent(txtLn)}&voice=${vnLow}&pitch=${pitch}&speed=${speed}&key=${termaiKey}`)
 
         if (!vnList.includes(vnLow)) {
-          return xp.sendMessage(chat.id, { text: `voice tidak valid\nlist voice:\n${vnTxt}`})
+          return sock.sendMessage(chat.id, { text: `voice tidak valid\nlist voice:\n${vnTxt}`})
         }
 
         if (!url.ok) throw new Error(`HTTP ${url.status}`)
 
         const audio = Buffer.from(await url.arrayBuffer())
-        await vn(xp, audio, m)
+        await vn(sock, audio, m)
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -580,7 +580,7 @@ export default function fun(ev) {
     money: 100,
     exp: 0.1,
   
-    run: async (xp, m, {
+    run: async (sock, m, {
       args,
       chat,
       cmd,
@@ -590,7 +590,7 @@ export default function fun(ev) {
         const name = args?.[0] || chat.pushName,
               num = chat.sender.split('@')[0]
 
-        await xp.sendMessage(chat.id, {
+        await sock.sendMessage(chat.id, {
           contacts: {
             displayName: name,
             contacts: [{ vcard: `BEGIN:VCARD\nVERSION:3.0\nFN:${name}\nTEL;type=CELL;waid=${num}:${num}\nEND:VCARD` }]
@@ -598,7 +598,7 @@ export default function fun(ev) {
         }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })

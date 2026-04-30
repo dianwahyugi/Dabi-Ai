@@ -21,7 +21,7 @@ export default function tools(ev) {
     money: 50,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       args,
       chat,
       cmd
@@ -37,7 +37,7 @@ export default function tools(ev) {
                 }).join(''),
               text = chat.quoted.txt || args.join(' ')
 
-        if (!text) return xp.sendMessage(chat.id, { text: 'reply atau masukkan teks enigma' }, { quoted: m })
+        if (!text) return sock.sendMessage(chat.id, { text: 'reply atau masukkan teks enigma' }, { quoted: m })
 
         const db = fs.existsSync(file)
               ? JSON.parse(fs.readFileSync(file))
@@ -47,10 +47,10 @@ export default function tools(ev) {
               rotor = data?.rotor?.random || rand(),
               result = dec(text, rotor)
 
-        await xp.sendMessage(chat.id, { text: result }, { quoted: m })
+        await sock.sendMessage(chat.id, { text: result }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -65,21 +65,21 @@ export default function tools(ev) {
     money: 500,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       chat,
       cmd,
       store
     }) => {
       try {
         const q = m.message?.extendedTextMessage?.contextInfo
-        if (!q?.stanzaId) return xp.sendMessage(chat.id, { text: 'reply pesan yang diteruskan dari saluran' }, { quoted: m })
+        if (!q?.stanzaId) return sock.sendMessage(chat.id, { text: 'reply pesan yang diteruskan dari saluran' }, { quoted: m })
 
         const load = await store.loadMsg(chat.id, q?.stanzaId)
-        if (!load) return xp.sendMessage(chat.id, { text: 'pastikan reply pesan yang diteruskan dari saluran' }, { quoted: m })
+        if (!load) return sock.sendMessage(chat.id, { text: 'pastikan reply pesan yang diteruskan dari saluran' }, { quoted: m })
 
         const info = load?.message?.[load.message?.extendedTextMessage ? 'extendedTextMessage' : 'conversation']?.contextInfo?.forwardedNewsletterMessageInfo
 
-        if (!info?.newsletterJid) return xp.sendMessage(chat.id, { text: 'Tidak ditemukan informasi saluran.' }, { quoted: m })
+        if (!info?.newsletterJid) return sock.sendMessage(chat.id, { text: 'Tidak ditemukan informasi saluran.' }, { quoted: m })
 
         let txt = `${head}${opb} Data Channel ${clb}\n`
             txt += `${body} ${btn} *Nama: ${info?.newsletterName}*\n`
@@ -87,7 +87,7 @@ export default function tools(ev) {
             txt += `${body} ${btn} *ID Pesan: ${info?.serverMessageId}*\n`
             txt += `${foot}${line}`
 
-        await xp.sendMessage(chat.id, {
+        await sock.sendMessage(chat.id, {
           text: txt,
           contextInfo: {
             externalAdReply: {
@@ -106,7 +106,7 @@ export default function tools(ev) {
         })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -121,18 +121,18 @@ export default function tools(ev) {
     money: 100,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       chat,
       cmd
     }) => {
       try {
         const target = chat.quoted.id?.[0],
               user = target.replace(/@s\.whatsapp\.net$/, ''),
-              { usrAdm, botAdm } = await grupify(xp, m),
+              { usrAdm, botAdm } = await grupify(sock, m),
               defThumb = 'https://c.termai.cc/i0/7DbG.jpg'
 
         if (!chat.group || !usrAdm || !botAdm || !target) {
-          return xp.sendMessage(chat.id, {
+          return sock.sendMessage(chat.id, {
               text: !chat.group
                 ? 'perintah ini hanya bisa dijalankan digrup'
                 : !usrAdm
@@ -144,13 +144,13 @@ export default function tools(ev) {
         }
 
         let thumb
-        try { thumb = await xp.profilePictureUrl(target, 'image') }
+        try { thumb = await sock.profilePictureUrl(target, 'image') }
         catch { thumb = defThumb }
 
-        await xp.sendMessage(chat.id, { image: { url: thumb }, caption: `pp @${user}`, mentions: [target] }, { quoted: m })
+        await sock.sendMessage(chat.id, { image: { url: thumb }, caption: `pp @${user}`, mentions: [target] }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -165,7 +165,7 @@ export default function tools(ev) {
     money: 500,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       chat,
       cmd,
       prefix
@@ -174,12 +174,12 @@ export default function tools(ev) {
         const q = m.message?.extendedTextMessage?.contextInfo?.quotedMessage,
               img = q?.imageMessage || m.message?.imageMessage
 
-        if (!img) return xp.sendMessage(chat.id, { text: `Kirim atau reply gambar dengan caption ${prefix}${cmd}` }, { quoted: m })
+        if (!img) return sock.sendMessage(chat.id, { text: `Kirim atau reply gambar dengan caption ${prefix}${cmd}` }, { quoted: m })
 
         const media = await downloadMediaMessage({ message: q || m.message }, 'buffer')
         if (!media) throw new Error('media tidak terunduh')
 
-        await xp.sendMessage(chat.id, { react: { text: '⏳', key: m.key } })
+        await sock.sendMessage(chat.id, { react: { text: '⏳', key: m.key } })
 
         const imageUrl = await tmpFiles(media),
               type = 'stdx4',
@@ -187,23 +187,23 @@ export default function tools(ev) {
 
         let i = 0
 
-        if (!task?.status) return xp.sendMessage(chat.id, { text: task?.msg || 'Gagal membuat task enhance.' }, { quoted: m })
+        if (!task?.status) return sock.sendMessage(chat.id, { text: task?.msg || 'Gagal membuat task enhance.' }, { quoted: m })
 
         while (i++ < 5e1) {
           const status = await fetch(`${termaiWeb}/api/tools/enhance/taskStatus?id=${task.id}&key=${termaiKey}`).then(r => r.json()).catch(() => null)
           if (!status) break
           if (status.task_status === 'failed' || status.task_status === 'done')
-            return xp.sendMessage(chat.id,
+            return sock.sendMessage(chat.id,
               status.task_status === 'failed'
                 ? { text: 'Maaf terjadi kesalahan. Gunakan gambar lain!' }
                 : { image: { url: status.output }, caption: 'Gambar berhasil di-enhance' }, { quoted: m })
           await new Promise(r => setTimeout(r, 1e3))
         }
 
-        await xp.sendMessage(chat.id, { text: 'Waktu pemrosesan habis. Coba lagi.' }, { quoted: m })
+        await sock.sendMessage(chat.id, { text: 'Waktu pemrosesan habis. Coba lagi.' }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -218,7 +218,7 @@ export default function tools(ev) {
     money: 50,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       args,
       chat,
       cmd,
@@ -227,7 +227,7 @@ export default function tools(ev) {
       try {
         const text = chat.quoted.txt || args.join(' ')
 
-        if (!text) return xp.sendMessage(chat.id, { text: `Masukkan teks atau reply pesan\nContoh: ${prefix}${cmd} halo aku ${botName}` }, { quoted: m });
+        if (!text) return sock.sendMessage(chat.id, { text: `Masukkan teks atau reply pesan\nContoh: ${prefix}${cmd} halo aku ${botName}` }, { quoted: m });
 
         const mc = {
           a: "ᔑ", b: "ʖ",
@@ -251,10 +251,10 @@ export default function tools(ev) {
           .map(v => v === "/" ? " " : Object.keys(mc).find(k => mc[k] === v) ?? v)
           .join("")
 
-        await xp.sendMessage(chat.id, { text: decmc(text) }, { quoted: m })
+        await sock.sendMessage(chat.id, { text: decmc(text) }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -269,7 +269,7 @@ export default function tools(ev) {
     money: 50,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       args,
       chat,
       cmd,
@@ -278,7 +278,7 @@ export default function tools(ev) {
       try {
         const text = chat.quoted.txt || args.join(' ')
 
-        if (!text) return xp.sendMessage(chat.id, { text: `masukan atau reply pesan nya\ncontoh: ${prefix}${cmd} .... .- .-.. ---   .- -.- ..-   -... --- -` }, { quoted: m })
+        if (!text) return sock.sendMessage(chat.id, { text: `masukan atau reply pesan nya\ncontoh: ${prefix}${cmd} .... .- .-.. ---   .- -.- ..-   -... --- -` }, { quoted: m })
 
         const mrs = {
           a: ".-", b: "-...",
@@ -309,10 +309,10 @@ export default function tools(ev) {
               : Object.keys(mrs).find(key => mrs[key] === v) ?? v
           ).join("")
 
-        await xp.sendMessage(chat.id, { text: decodemrs(text) }, { quoted: m })
+        await sock.sendMessage(chat.id, { text: decodemrs(text) }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -327,7 +327,7 @@ export default function tools(ev) {
     money: 100,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       args,
       chat,
       cmd
@@ -336,16 +336,16 @@ export default function tools(ev) {
         const quoted = m.message?.extendedTextMessage?.contextInfo?.quotedMessage,
               video = quoted?.videoMessage || m.message?.videoMessage
 
-        if (!video) return xp.sendMessage(chat.id, { text: 'reply atau kirim video yang ingin dijadikan ptv' }, { quoted: m })
+        if (!video) return sock.sendMessage(chat.id, { text: 'reply atau kirim video yang ingin dijadikan ptv' }, { quoted: m })
 
         const buffer = await downloadMediaMessage({ message: quoted || m.message }, 'buffer')
 
         if (!buffer) throw new Error('gagal mengunduh media')
 
-        await xp.sendMessage(chat.id, { video: buffer, mimetype: 'video/mp4', ptv: !0 })
+        await sock.sendMessage(chat.id, { video: buffer, mimetype: 'video/mp4', ptv: !0 })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -360,7 +360,7 @@ export default function tools(ev) {
     money: 100,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       args,
       chat,
       cmd,
@@ -369,15 +369,15 @@ export default function tools(ev) {
       try {
         const txt = args?.join(' ')
 
-        if (!txt?.includes('|')) return xp.sendMessage(chat.id, { text: `format salah\ncontoh: ${prefix}${cmd} teks 1 | teks 2` }, { quoted: m })
+        if (!txt?.includes('|')) return sock.sendMessage(chat.id, { text: `format salah\ncontoh: ${prefix}${cmd} teks 1 | teks 2` }, { quoted: m })
 
         const [t1, t2] = txt.split('|').map(v => v.trim()),
               result = `${t1}${global.readmore} ${t2}`
 
-        await xp.sendMessage(chat.id, { text: result }, { quoted: m })
+        await sock.sendMessage(chat.id, { text: result }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -392,7 +392,7 @@ export default function tools(ev) {
     money: 100,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       chat,
       cmd
     }) => {
@@ -404,25 +404,25 @@ export default function tools(ev) {
               media = ['image', 'video', 'audio'],
               mediaType = media.find(t => reply?.mimetype?.includes(t)),
               time = global.time.timeIndo("Asia/Jakarta", "HH"),
-              { usrAdm } = await grupify(xp, m)
+              { usrAdm } = await grupify(sock, m)
 
-        if (!usrAdm) return xp.sendMessage(chat.id, { text: 'kamu bukan admin' }, { quoted: m })
+        if (!usrAdm) return sock.sendMessage(chat.id, { text: 'kamu bukan admin' }, { quoted: m })
 
         if (!reply || !mediaType || !reply.mediaKey) {
-          return xp.sendMessage(chat.id, { text: !reply ? 'reply pesan satu kali lihat' : 'pesan tidak didukung atau sudah dibuka' }, { quoted: m })
+          return sock.sendMessage(chat.id, { text: !reply ? 'reply pesan satu kali lihat' : 'pesan tidak didukung atau sudah dibuka' }, { quoted: m })
         }
 
-        const buffer = await downloadMediaMessage({ message: { [`${mediaType}Message`]: reply } }, 'buffer', {}, { logger: xp.logger, reuploadRequest: xp.updateMediaMessage })
+        const buffer = await downloadMediaMessage({ message: { [`${mediaType}Message`]: reply } }, 'buffer', {}, { logger: sock.logger, reuploadRequest: sock.updateMediaMessage })
 
         if (!buffer) throw new Error('gagal mengunduh media')
 
-        await xp.sendMessage(chat.id, {
+        await sock.sendMessage(chat.id, {
             [mediaType]: buffer,
             caption: reply.caption ? `pesan: ${reply.caption}` : 'media berhasil diambil'
           }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -437,7 +437,7 @@ export default function tools(ev) {
     money: 50,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       args,
       chat,
       cmd,
@@ -454,7 +454,7 @@ export default function tools(ev) {
                 }).join(''),
               text = chat.quoted.txt || args.join(' ')
 
-        if (!text) return xp.sendMessage(chat.id, { text: `Masukkan teks atau reply pesan\nContoh: ${prefix}${cmd} halo aku ${botName}` }, { quoted: m })
+        if (!text) return sock.sendMessage(chat.id, { text: `Masukkan teks atau reply pesan\nContoh: ${prefix}${cmd} halo aku ${botName}` }, { quoted: m })
 
         !fs.existsSync(file)
           ? fs.writeFileSync(file, JSON.stringify({ key: {} }, null, 2))
@@ -475,10 +475,10 @@ export default function tools(ev) {
         }
 
         fs.writeFileSync(file, JSON.stringify(db, null, 2))
-        await xp.sendMessage(chat.id, { text: result }, { quoted: m })
+        await sock.sendMessage(chat.id, { text: result }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -493,7 +493,7 @@ export default function tools(ev) {
     money: 50,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       args,
       chat,
       cmd,
@@ -502,7 +502,7 @@ export default function tools(ev) {
       try {
         const text = chat.quoted.txt || args.join(' ')
 
-        if (!text) return xp.sendMessage(chat.id, { text: `Masukkan teks atau reply pesan\nContoh: ${prefix}${cmd} halo aku ${botName}` }, { quoted: m })
+        if (!text) return sock.sendMessage(chat.id, { text: `Masukkan teks atau reply pesan\nContoh: ${prefix}${cmd} halo aku ${botName}` }, { quoted: m })
 
         const mc = {
           a: "ᔑ", b: "ʖ",
@@ -526,10 +526,10 @@ export default function tools(ev) {
           .map(v => mc[v] ?? v)
           .join(" ")
 
-        await xp.sendMessage(chat.id, { text: encmc(text) }, { quoted: m })
+        await sock.sendMessage(chat.id, { text: encmc(text) }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -544,7 +544,7 @@ export default function tools(ev) {
     money: 50,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       args,
       chat,
       cmd,
@@ -553,7 +553,7 @@ export default function tools(ev) {
       try {
         const text = chat.quoted.txt || args.join(' ')
 
-        if (!text) return xp.sendMessage(chat.id, { text: `masukan atau reply pesan nya\ncontoh: ${prefix}${cmd} halo aku ${botName}` }, { quoted: m })
+        if (!text) return sock.sendMessage(chat.id, { text: `masukan atau reply pesan nya\ncontoh: ${prefix}${cmd} halo aku ${botName}` }, { quoted: m })
 
         const mrs = {
           a: ".-", b: "-...",
@@ -581,10 +581,10 @@ export default function tools(ev) {
             .map(v => mrs[v] ?? v)
             .join(" ")
 
-        await xp.sendMessage(chat.id, { text: ` ${encmrs(text)}` }, { quoted: m })
+        await sock.sendMessage(chat.id, { text: ` ${encmrs(text)}` }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -599,7 +599,7 @@ export default function tools(ev) {
     money: 50,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       chat,
       cmd
     }) => {
@@ -608,15 +608,15 @@ export default function tools(ev) {
               img = q?.imageMessage || q?.videoMessage
 
         if (!img)
-          return xp.sendMessage(chat.id, { text: 'Kirim atau reply gambar/video untuk dijadikan link.' }, { quoted: m })
+          return sock.sendMessage(chat.id, { text: 'Kirim atau reply gambar/video untuk dijadikan link.' }, { quoted: m })
 
         const buffer = await downloadMediaMessage({ message: q }, 'buffer'),
               url = await tmpFiles(buffer)
 
-        await xp.sendMessage(chat.id, { text: url }, { quoted: m })
+        await sock.sendMessage(chat.id, { text: url }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -631,7 +631,7 @@ export default function tools(ev) {
     money: 500,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       chat,
       cmd
     }) => {
@@ -643,7 +643,7 @@ export default function tools(ev) {
               name = chat.pushName,
               time = global.time.timeIndo("Asia/Jakarta", "HH")
 
-        if (!media) return xp.sendMessage(chat.id, { text: 'reply media yang ingin dijadikan url' }, { quoted: m })
+        if (!media) return sock.sendMessage(chat.id, { text: 'reply media yang ingin dijadikan url' }, { quoted: m })
 
         const mediadl = await downloadMediaMessage({ message: q || m.message }, 'buffer')
         if (!mediadl) throw new Error('error saat mengunduh')
@@ -661,7 +661,7 @@ export default function tools(ev) {
 
         const res = await upload(mediadl)
 
-        if (!res) return xp.sendMessage(chat.id, { text: 'error pada api' }, { quoted: m })
+        if (!res) return sock.sendMessage(chat.id, { text: 'error pada api' }, { quoted: m })
 
         let txt = `upload file berhasil\n\n`
             txt += `${head}${opb} *${botName}* ${clb}\n`
@@ -670,7 +670,7 @@ export default function tools(ev) {
             txt += `${body} ${btn} *size:* ${res.size}\n`
             txt += `${foot}${line}`
 
-        await xp.sendMessage(chat.id, {
+        await sock.sendMessage(chat.id, {
           text: txt,
           contextInfo: {
             externalAdReply: {
@@ -689,7 +689,7 @@ export default function tools(ev) {
         })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -704,7 +704,7 @@ export default function tools(ev) {
     money: 100,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       chat,
       cmd
     }) => {
@@ -714,16 +714,16 @@ export default function tools(ev) {
                 .map(v => m.message?.[v] || q?.[v])
                 .find(Boolean)
 
-        if (!reply) return xp.sendMessage(chat.id, { text: 'reply atau kirim audio atau video yang akan diubah ke vn' }, { quoted: m })
+        if (!reply) return sock.sendMessage(chat.id, { text: 'reply atau kirim audio atau video yang akan diubah ke vn' }, { quoted: m })
 
         let audio
         audio = await downloadMediaMessage({ message: q || m.message }, 'buffer')
         if (!audio) throw new Error('media tidak terunduh')
 
-        await vn(xp, audio, m)
+        await vn(sock, audio, m)
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -738,7 +738,7 @@ export default function tools(ev) {
     money: 100,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       chat,
       cmd,
       prefix
@@ -747,18 +747,18 @@ export default function tools(ev) {
         const q = m.message?.extendedTextMessage?.contextInfo?.quotedMessage,
               audio = q?.audioMessage || q?.voiceNoteMessage
 
-        if (!q || !audio) return xp.sendMessage(chat.id, { text: 'reply pesan audio nya' }, { quoted: m })
+        if (!q || !audio) return sock.sendMessage(chat.id, { text: 'reply pesan audio nya' }, { quoted: m })
 
         let media
         media = await downloadMediaMessage({ message: q || m.message }, 'buffer')
 
         if (!media) throw new Error('media tidak terunduh')
 
-        xp.sendMessage(chat.id, { text: 'bentar aku dengerin dulu...' }, { quoted: m })
+        sock.sendMessage(chat.id, { text: 'bentar aku dengerin dulu...' }, { quoted: m })
 
         const res = await axios.post(`${termaiWeb}/api/audioProcessing/whatmusic?key=${termaiKey}`, media, { headers: { 'Content-Type': 'audio/mpeg' } })
 
-        if (!res.data?.status || !res.data.data) return xp.sendMessage(chat.id, { text: 'Lagu tidak dikenali.' }, { quoted: m })
+        if (!res.data?.status || !res.data.data) return sock.sendMessage(chat.id, { text: 'Lagu tidak dikenali.' }, { quoted: m })
 
         const { title, artists, acrid } = res.data.data
 
@@ -768,10 +768,10 @@ export default function tools(ev) {
             txt += `${body} ${btn} *ACRID:* ${acrid}\n`
             txt += `${foot}${line}`
 
-      await xp.sendMessage(chat.id, { text: txt }, { quoted: m })
+      await sock.sendMessage(chat.id, { text: txt }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })

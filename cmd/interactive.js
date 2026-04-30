@@ -10,12 +10,12 @@ const fetchData = async (url, type = 'json', options = {}) => {
   return type === 'buffer' ? Buffer.from(await res.arrayBuffer()) : res.json()
 }
 
-async function vn(xp, audio, m) {
+async function vn(sock, audio, m) {
   try {
     const chat = global.chat(m),
           buff = await convertToOpus(audio),
           config = { audio: buff, mimetype: 'audio/ogg; codecs=opus', ptt: !0 },
-          messageContent = await generateWAMessageContent(config, { upload: xp.waUploadToServer }),
+          messageContent = await generateWAMessageContent(config, { upload: sock.waUploadToServer }),
           type = getContentType(messageContent)
 
     if (m) messageContent[type].contextInfo = {
@@ -25,14 +25,14 @@ async function vn(xp, audio, m) {
     }
 
     messageContent[type].waveform = await generateWaveform(buff)
-    return await xp.relayMessage(chat.id, messageContent, {})
+    return await sock.relayMessage(chat.id, messageContent, {})
   } catch (e) {
     err('error pasa vn', e)
     throw e
   }
 }
 
-async function bell(txt, m, xp, voice = "dabi", pitch = 0, speed = 0.9) {
+async function bell(txt, m, sock, voice = "dabi", pitch = 0, speed = 0.9) {
   const chat = global.chat(m),
         name = m?.pushName || chat.sender || 'tidak diketahui',
         role = get.db(chat.sender)?.ai?.role || 'gak kenal',
@@ -141,7 +141,7 @@ async function bell(txt, m, xp, voice = "dabi", pitch = 0, speed = 0.9) {
         'buffer'
       )
       return audio
-        ? (await vn(xp, audio, m), { cmd: 'voice' })
+        ? (await vn(sock, audio, m), { cmd: 'voice' })
         : { error: !0, message: 'Gagal membuat voice' }
     }
 
@@ -151,7 +151,7 @@ async function bell(txt, m, xp, voice = "dabi", pitch = 0, speed = 0.9) {
   }
 }
 
-const signal = async (text, m, xp, ev) => {
+const signal = async (text, m, sock, ev) => {
   if (m.key?.jadibot) return
 
     const replaceTag = (text) => {
@@ -166,7 +166,7 @@ const signal = async (text, m, xp, ev) => {
       })
     }
 
-  const idBot = xp.user?.id?.split(':')[0] + '@s.whatsapp.net',
+  const idBot = sock.user?.id?.split(':')[0] + '@s.whatsapp.net',
         chat = global.chat(m),
         botName = global.botName?.toLowerCase(),
         ctx = m.message?.extendedTextMessage?.contextInfo || m.message?.imageMessage?.contextInfo || {},
@@ -191,7 +191,7 @@ const signal = async (text, m, xp, ev) => {
   role(m)
   save.db()
 
-  const _ai = await bell(txt, m, xp)
+  const _ai = await bell(txt, m, sock)
   if (!_ai || !ev) return
   log(_ai)
 
@@ -268,11 +268,11 @@ const signal = async (text, m, xp, ev) => {
   if (ify) {
     m.q = ify.q
     const _args = ify.prompt && _ai.msg ? _ai.msg.trim().split(/\s+/) : []
-    ev.emit(ify.event, xp, m, { args: _args, chat })
+    ev.emit(ify.event, sock, m, { args: _args, chat })
     res = ify.res ?? !1
   } else res = !!_ai.msg
 
-  if (_ai.msg && res) await xp.sendMessage(chat.id, { text: _ai.msg }, { quoted: m })
+  if (_ai.msg && res) await sock.sendMessage(chat.id, { text: _ai.msg }, { quoted: m })
 
   return _ai
 }

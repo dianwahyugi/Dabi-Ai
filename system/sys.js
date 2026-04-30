@@ -64,17 +64,17 @@ export const bangc = chat => {
   return ban ? (log(c.redBright.bold(`Grup ${chat.id} diban`)), !0) : !1;
 };
 
-const grupify = async (xp, m) => {
+const grupify = async (sock, m) => {
   const cht = chat(m)
   if (!cht) return
 
-  const meta = groupCache.get(cht.id) || await getMetadata(cht.id, xp)
+  const meta = groupCache.get(cht.id) || await getMetadata(cht.id, sock)
   if (!meta) return
 
   const adm = (meta.participants || [])
     .filter(p => p.admin)
     .map(p => p.phoneNumber),
-        bot = `${xp.user?.id?.split(':')[0]}@s.whatsapp.net`,
+        bot = `${sock.user?.id?.split(':')[0]}@s.whatsapp.net`,
         botAdm = adm.includes(bot),
         usrAdm = adm.includes(cht.sender)
 
@@ -87,10 +87,10 @@ const grupify = async (xp, m) => {
   }
 }
 
-export const txtWlc = async (xp, id) => {
+export const txtWlc = async (sock, id) => {
   try {
     const gcData = get.gc(id),
-          meta = groupCache.get(id) || await getMetadata(id, xp),
+          meta = groupCache.get(id) || await getMetadata(id, sock),
           txt = gcData?.filter?.welcome?.welcomeText?.trim()
                 || `selamat datang @user digrup ${meta?.subject || id}`;
 
@@ -100,10 +100,10 @@ export const txtWlc = async (xp, id) => {
   }
 }
 
-export const txtLft = async (xp, id) => {
+export const txtLft = async (sock, id) => {
   try {
     const gcData = get.gc(id),
-          meta = groupCache.get(id) || await getMetadata(id, xp),
+          meta = groupCache.get(id) || await getMetadata(id, sock),
           txt = gcData?.filter?.left?.leftText?.trim() || `%user keluar dari grup ${meta?.subject || id}`
 
     return { txt }
@@ -112,7 +112,7 @@ export const txtLft = async (xp, id) => {
   }
 }
 
-export const mode = async (xp, chat) => {
+export const mode = async (sock, chat) => {
   if (!chat) return !1
 
   const cfg = JSON.parse(fs.readFileSync('./system/set/config.json', 'utf-8')),

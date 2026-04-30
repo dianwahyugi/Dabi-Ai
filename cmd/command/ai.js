@@ -15,7 +15,7 @@ export default function ai(ev) {
     money: 100,
     exp: 0.2,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       args,
       chat,
       cmd,
@@ -25,24 +25,24 @@ export default function ai(ev) {
         const val = args[0]?.toLowerCase();
 
         if (!['on', 'off'].includes(val)) 
-          return xp.sendMessage(chat.id, { text: `Gunakan perintah ${prefix}${cmd} on/off` }, { quoted: m });
+          return sock.sendMessage(chat.id, { text: `Gunakan perintah ${prefix}${cmd} on/off` }, { quoted: m });
 
         const value = val === 'on',
               usr = get.db(chat.sender),
               opsi = !!usr?.ai?.bell
 
         if ((value && opsi) || (!value && !opsi)) {
-          return xp.sendMessage(chat.id, { text: `${cmd} sudah ${value ? 'aktif' : 'nonaktif'}`
+          return sock.sendMessage(chat.id, { text: `${cmd} sudah ${value ? 'aktif' : 'nonaktif'}`
           }, { quoted: m })
         }
 
         usr.ai.bell = value
         save.db()
 
-        xp.sendMessage(chat.id, { text: `${cmd} telah ${value ? 'diaktifkan' : 'dinonaktifkan'}.` }, { quoted: m })
+        sock.sendMessage(chat.id, { text: `${cmd} telah ${value ? 'diaktifkan' : 'dinonaktifkan'}.` }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -57,7 +57,7 @@ export default function ai(ev) {
     money: 500,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       chat,
       cmd
     }) => {
@@ -66,7 +66,7 @@ export default function ai(ev) {
               json = await res.json();
 
         if (!json.status) {
-          return xp.sendMessage(chat.id, { text: `gagal mengambil data api ${json.data}` }, { quoted: m })
+          return sock.sendMessage(chat.id, { text: `gagal mengambil data api ${json.data}` }, { quoted: m })
         }
 
         const d = json.data,
@@ -100,10 +100,10 @@ export default function ai(ev) {
 
         txt += `${body} Api Dari ${termaiWeb}\n${foot}${line}\n`;
 
-        xp.sendMessage(chat.id, { text: txt.trim() }, { quoted: m })
+        sock.sendMessage(chat.id, { text: txt.trim() }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -118,7 +118,7 @@ export default function ai(ev) {
     money: 1000,
     exp: 0.3,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       args,
       chat,
       cmd,
@@ -131,10 +131,10 @@ export default function ai(ev) {
               image = q?.imageMessage || m.message?.imageMessage
 
         if (!image && !prompt) {
-          return xp.sendMessage(chat.id, { text: !image ? `reply/kirim gambar dengan caption ${prefix}${cmd} prompt` : `sertakan prompt\ncontoh prompt: ${prefix}${cmd} ubah kulitnya jadi hitam` }, { quoted: m })
+          return sock.sendMessage(chat.id, { text: !image ? `reply/kirim gambar dengan caption ${prefix}${cmd} prompt` : `sertakan prompt\ncontoh prompt: ${prefix}${cmd} ubah kulitnya jadi hitam` }, { quoted: m })
         }
 
-        await xp.sendMessage(chat.id, { react: { text: '⏳', key: m.key } })
+        await sock.sendMessage(chat.id, { react: { text: '⏳', key: m.key } })
 
         let media
         try {
@@ -159,10 +159,10 @@ export default function ai(ev) {
         const array = await res.arrayBuffer(),
               imgBuffer = Buffer.from(array)
 
-        await xp.sendMessage(chat.id, { image: imgBuffer, caption: `hasil dengan prompt: ${prompt}` }, { quoted: m })
+        await sock.sendMessage(chat.id, { image: imgBuffer, caption: `hasil dengan prompt: ${prompt}` }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -177,7 +177,7 @@ export default function ai(ev) {
     money: 1500,
     exp: 0.2,
   
-    run: async (xp, m, {
+    run: async (sock, m, {
       args,
       chat,
       cmd,
@@ -189,9 +189,9 @@ export default function ai(ev) {
               prompt = args.join(' ')
 
         if (!mediaMessage || !prompt)
-          return xp.sendMessage(chat.id, { text: `mana gambar nya?\ncontoh: ${prefix}${cmd} perhalus gerakannya` }, { quoted: m })
+          return sock.sendMessage(chat.id, { text: `mana gambar nya?\ncontoh: ${prefix}${cmd} perhalus gerakannya` }, { quoted: m })
 
-        await xp.sendMessage(chat.id, { react: { text: '⏳', key: m.key } })
+        await sock.sendMessage(chat.id, { react: { text: '⏳', key: m.key } })
 
         const media = await downloadMediaMessage({ message: { imageMessage: mediaMessage } }, 'buffer')
         if (!media) throw new Error('gagal mengunduh gambar')
@@ -222,7 +222,7 @@ export default function ai(ev) {
               if (data.status === 'failed') {
                 finished = !0
                 response.data.destroy()
-                return call(xp, new Error('gagal generate video'), m)
+                return call(sock, new Error('gagal generate video'), m)
               }
 
               if (data.status === 'completed') {
@@ -231,26 +231,26 @@ export default function ai(ev) {
 
                 const videoUrl = data?.video?.url || data?.url || lastUrl
                 if (!videoUrl)
-                  return call(xp, new Error('video tidak ditemukan'), m)
+                  return call(sock, new Error('video tidak ditemukan'), m)
 
-                return xp.sendMessage(chat.id, { video: { url: videoUrl }, caption: 'berhasil convert gambar ke video' }, { quoted: m })
+                return sock.sendMessage(chat.id, { video: { url: videoUrl }, caption: 'berhasil convert gambar ke video' }, { quoted: m })
               }
             }
           } catch (e) {
             finished = !0
             response.data.destroy()
-            call(xp, e, m)
+            call(sock, e, m)
           }
         })
 
         response.data.on('error', e => {
           if (finished) return
           finished = !0
-          call(xp, e, m)
+          call(sock, e, m)
         })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -265,21 +265,21 @@ export default function ai(ev) {
     money: 500,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       args,
       chat,
       cmd
     }) => {
       try {
-        if (!chat.sender) return await xp.sendMessage(chat.id, { text: 'Target tidak ditemukan.' }, { quoted: m })
+        if (!chat.sender) return await sock.sendMessage(chat.id, { text: 'Target tidak ditemukan.' }, { quoted: m })
 
         const res  = await fetch(`${termaiWeb}/api/chat/logic-bell/reset?id=${chat.sender}&key=${termaiKey}`),
               json = await res.json()
 
-        await xp.sendMessage(chat.id, { text: json.m || json.msg || 'Terjadi error saat reset sesi Bell.' }, { quoted: m })
+        await sock.sendMessage(chat.id, { text: json.m || json.msg || 'Terjadi error saat reset sesi Bell.' }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -294,7 +294,7 @@ export default function ai(ev) {
     money: 0,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       args,
       chat,
       cmd,
@@ -304,15 +304,15 @@ export default function ai(ev) {
         const q = chat.quoted.txt,
               cfg = JSON.parse(fs.readFileSync('./system/set/config.json', 'utf-8'))
 
-        if (!q) return xp.sendMessage(chat.id, { text: `contoh:\n${prefix}${cmd} teks logika\n\nlogika saat ini:\n${cfg?.botSetting?.logic || 'belum di setting'}` }, { quoted: m })
+        if (!q) return sock.sendMessage(chat.id, { text: `contoh:\n${prefix}${cmd} teks logika\n\nlogika saat ini:\n${cfg?.botSetting?.logic || 'belum di setting'}` }, { quoted: m })
 
         cfg.botSetting.logic = q
         fs.writeFileSync('./system/set/config.json', JSON.stringify(cfg, null, 2))
 
-        await xp.sendMessage(chat.id, { text: `logic ai berhasil diubah ke:\n${q}` }, { quoted: m })
+        await sock.sendMessage(chat.id, { text: `logic ai berhasil diubah ke:\n${q}` }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })

@@ -17,7 +17,7 @@ export default function info(ev) {
     money: 1,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       args,
       chat,
       cmd
@@ -27,17 +27,17 @@ export default function info(ev) {
               reason = args.join(' ') || 'tidak ada alasan',
               time = global.time.timeIndo('Asia/Jakarta', 'DD-MM HH:mm:ss')
 
-        if (!usr) return xp.sendMessage(chat.id, { text: 'kamu belum terdaftar, ulangi' }, { quoted: m })
+        if (!usr) return sock.sendMessage(chat.id, { text: 'kamu belum terdaftar, ulangi' }, { quoted: m })
 
         usr.afk.status = !0
         usr.afk.reason = reason
         usr.afk.afkStart = time 
         save.db()
 
-        await xp.sendMessage(chat.id, { text: `Kamu memulai afk\ndengan alasan: ${reason}` }, { quoted: m })
+        await sock.sendMessage(chat.id, { text: `Kamu memulai afk\ndengan alasan: ${reason}` }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -52,7 +52,7 @@ export default function info(ev) {
     money: 100,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       args,
       chat,
       cmd,
@@ -60,14 +60,14 @@ export default function info(ev) {
     }) => {
       try {
         const kota = args.join(' ')
-        if (!kota) return xp.sendMessage(chat.id, { text: `contoh: ${prefix}${cmd} jakarta` }, { quoted: m })
+        if (!kota) return sock.sendMessage(chat.id, { text: `contoh: ${prefix}${cmd} jakarta` }, { quoted: m })
 
         const url = await fetch(`https://api.ootaizumi.web.id/lokasi/cuaca?lokasi=${encodeURIComponent(kota)}`),
               res = await url.json()
 
-        await xp.sendMessage(chat.id, { react: { text: '⏳', key: m.key } })
+        await sock.sendMessage(chat.id, { react: { text: '⏳', key: m.key } })
 
-        if (!res.status || !res.result) return xp.sendMessage(chat.id, { text: `gagal mendapatkan info cuaca untuk kota: ${kota}` }, { quoted: m })
+        if (!res.status || !res.result) return sock.sendMessage(chat.id, { text: `gagal mendapatkan info cuaca untuk kota: ${kota}` }, { quoted: m })
 
         const {
           namaTempat,
@@ -86,10 +86,10 @@ export default function info(ev) {
             txt += `${foot}${line}\n\n`
             txt += 'Semoga harimu menyenangkan! Jangan lupa bawa payung kalau cuacanya mendung ya! ☂'
 
-        await xp.sendMessage(chat.id, { text: txt }, { quoted: m })
+        await sock.sendMessage(chat.id, { text: txt }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -104,7 +104,7 @@ export default function info(ev) {
     money: 100,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       chat,
       cmd,
       prefix
@@ -114,11 +114,11 @@ export default function info(ev) {
               metadata = groupCache.get(chat.id),
               name = metadata.subject,
               member = metadata.participants.length,
-              { usrAdm, botAdm } = await grupify(xp, m),
+              { usrAdm, botAdm } = await grupify(sock, m),
               defThumb = 'https://c.termai.cc/i0/7DbG.jpg'
 
         if (!chat.group || !gcData || !usrAdm || !botAdm) {
-          return xp.sendMessage(chat.id, { text: !chat.group ? 'perintah ini hanya bisa digunakan digrup' : !gcData ? `grup ini belum terdaftar ketik ${prefix}daftargc untuk mendaftar` : !usrAdm ? 'kamu bukan admin' : 'aku bukan admin' }, { quoted: m })
+          return sock.sendMessage(chat.id, { text: !chat.group ? 'perintah ini hanya bisa digunakan digrup' : !gcData ? `grup ini belum terdaftar ketik ${prefix}daftargc untuk mendaftar` : !usrAdm ? 'kamu bukan admin' : 'aku bukan admin' }, { quoted: m })
         }
 
         let txt = `${head} ${opb} *Informasi Grup* ${clb}\n`
@@ -143,11 +143,11 @@ export default function info(ev) {
             txt += `${body} ${btn} *Kata: ${gcData?.filter?.badword?.badwordtext || '-'}*\n`
             txt += `${foot}${line}`
 
-        let thumb = await xp.profilePictureUrl(metadata.id, 'image') || defThumb,
+        let thumb = await sock.profilePictureUrl(metadata.id, 'image') || defThumb,
             oldName = name,
             newName = metadata.subject
 
-        await xp.sendMessage(chat.id, {
+        await sock.sendMessage(chat.id, {
           text: txt,
           contextInfo: {
             externalAdReply: {
@@ -178,7 +178,7 @@ export default function info(ev) {
         }
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -193,7 +193,7 @@ export default function info(ev) {
     money: 1,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       args,
       chat,
       cmd,
@@ -203,7 +203,7 @@ export default function info(ev) {
         const text = args[0]?.toLowerCase(),
               cmdFile = path.join(process.cwd(), 'cmd', 'command')
 
-        if (!text) return xp.sendMessage(chat.id, { text: `gunakan:\n${prefix}${cmd} menu\n\nlist bantuan:\n1. reaction cmd -> .help reaction/react` }, { quoted: m })
+        if (!text) return sock.sendMessage(chat.id, { text: `gunakan:\n${prefix}${cmd} menu\n\nlist bantuan:\n1. reaction cmd -> .help reaction/react` }, { quoted: m })
 
         const files = fs.readdirSync(cmdFile).filter(f => f.endsWith('.js'))
         let found = null
@@ -227,10 +227,10 @@ export default function info(ev) {
         }
 
         if (['reaction', 'react'].includes(text)) {
-          return xp.sendMessage(chat.id, { text: rct_txt }, { quoted: m })
+          return sock.sendMessage(chat.id, { text: rct_txt }, { quoted: m })
         }
 
-        if (!found) return xp.sendMessage(chat.id, { text: `fitur ${text} tidak ada` }, { quoted: m })
+        if (!found) return sock.sendMessage(chat.id, { text: `fitur ${text} tidak ada` }, { quoted: m })
 
         let txt = `${head} ${opb} *I N F O R M A S I* ${clb}\n`
             txt += `${body} ${btn} *Nama: ${found.name || '-'}*\n`
@@ -243,7 +243,7 @@ export default function info(ev) {
             txt += `${body} ${btn} *Exp: ${found.exp || 0.1}*\n`
             txt += `${foot}${line}`
 
-        await xp.sendMessage(chat.id, {
+        await sock.sendMessage(chat.id, {
           text: txt,
           contextInfo: {
             externalAdReply: {
@@ -262,7 +262,7 @@ export default function info(ev) {
         }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -278,7 +278,7 @@ export default function info(ev) {
     money: 1,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       args,
       chat,
       cmd,
@@ -290,7 +290,7 @@ export default function info(ev) {
               data = Object.values(db().key),
               Format = n => n.toLocaleString('id-ID')
 
-        if (!ocrs) return xp.sendMessage(chat.id, { text: `contoh:\n${prefix + cmd} money\n${prefix + cmd} exp\n${prefix + cmd} cmd\n${prefix + cmd} ai\n${prefix + cmd} rb` }, { quoted: m })
+        if (!ocrs) return sock.sendMessage(chat.id, { text: `contoh:\n${prefix + cmd} money\n${prefix + cmd} exp\n${prefix + cmd} cmd\n${prefix + cmd} ai\n${prefix + cmd} rb` }, { quoted: m })
 
         const sort =
           ocrs === 'money'
@@ -336,10 +336,10 @@ export default function info(ev) {
           txt += `   ${ocrs}: ${Format(v.total)}\n\n`
         })
 
-        xp.sendMessage(chat.id,{ text: txt },{ quoted: m })
+        sock.sendMessage(chat.id,{ text: txt },{ quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -354,21 +354,21 @@ export default function info(ev) {
     money: 1,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       chat,
       cmd
     }) => {
       try {
-        if (!chat.group) return xp.sendMessage(chat.id, { text: 'perintah ini hanya bisa digunakan digrup' }, { quoted: m })
+        if (!chat.group) return sock.sendMessage(chat.id, { text: 'perintah ini hanya bisa digunakan digrup' }, { quoted: m })
 
-        const meta = groupCache.get(chat.id) || await getMetadata(chat.id, xp),
+        const meta = groupCache.get(chat.id) || await getMetadata(chat.id, sock),
               admins = meta.participants.filter(v => v.admin).map(v => v.id),
               text = admins.map((v, i) => `${i + 1}. @${v.split('@')[0]}`).join('\n')
 
-        xp.sendMessage(chat.id, { text, mentions: admins }, { quoted: m })
+        sock.sendMessage(chat.id, { text, mentions: admins }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -383,7 +383,7 @@ export default function info(ev) {
     money: 1,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       args,
       chat,
       cmd,
@@ -461,7 +461,7 @@ export default function info(ev) {
         txt += `> ketik ${prefix}help untuk melihat cara pakai ${botName}\n\n`
         txt += `${footer}`
 
-        await xp.sendMessage(chat.id, {
+        await sock.sendMessage(chat.id, {
           text: txt,
           contextInfo: {
             externalAdReply: {
@@ -480,7 +480,7 @@ export default function info(ev) {
         }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -495,7 +495,7 @@ export default function info(ev) {
     money: 100,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       chat,
       cmd
     }) => {
@@ -504,16 +504,16 @@ export default function info(ev) {
               bot = global.botName || 'error',
               ownerNumber = Array.isArray(global.ownerNumber) ? global.ownerNumber : [global.ownerNumber]
 
-        if (!ownerNumber || !ownerNumber.length) return xp.sendMessage(chat.id, { text: 'tidak ada kontak owner' }, { quoted: m })
+        if (!ownerNumber || !ownerNumber.length) return sock.sendMessage(chat.id, { text: 'tidak ada kontak owner' }, { quoted: m })
 
         const contact = ownerNumber.map((num, i) => ({ vcard: `BEGIN:VCARD\nVERSION:3.0\nFN:${owner} ${i + 1}\nTEL;type=CELL;waid=${num}:${num}\nEND:VCARD` })),
               displayName = ownerNumber.length > 1 ? `${owner} dan ${ownerNumber.length - 1} lainnya` : owner
 
-        await xp.sendMessage(chat.id, { contacts: { displayName, contacts: contact } }, { quoted: m })
-        await xp.sendMessage(chat.id, { text: 'ini adalah kontak owner ku' }, { quoted: m })
+        await sock.sendMessage(chat.id, { contacts: { displayName, contacts: contact } }, { quoted: m })
+        await sock.sendMessage(chat.id, { text: 'ini adalah kontak owner ku' }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -528,7 +528,7 @@ export default function info(ev) {
     money: 1,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       chat,
       cmd
     }) => {
@@ -538,10 +538,10 @@ export default function info(ev) {
               defThumb = 'https://c.termai.cc/i0/7DbG.jpg',
               type = v => v ? 'Aktif' : 'Tidak'
 
-        if (!usr) return xp.sendMessage(chat.id, { text: 'kamu belum terdaftar, ulangi' }, { quoted: m })
+        if (!usr) return sock.sendMessage(chat.id, { text: 'kamu belum terdaftar, ulangi' }, { quoted: m })
 
         let thumb
-        try { thumb = await xp.profilePictureUrl(chat.sender, 'image') }
+        try { thumb = await sock.profilePictureUrl(chat.sender, 'image') }
         catch { thumb = defThumb }
 
         let txt = `${head} ${opb} *P R O F I L E* ${clb}\n`
@@ -568,7 +568,7 @@ export default function info(ev) {
             txt += `${body} ${btn} *Kesempatan Rampok:* ${usr.game.robbery.cost}\n`
             txt += `${foot}${line}`
 
-        await xp.sendMessage(chat.id, {
+        await sock.sendMessage(chat.id, {
           text: txt,
           contextInfo: {
             externalAdReply: {
@@ -587,7 +587,7 @@ export default function info(ev) {
         }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -602,7 +602,7 @@ export default function info(ev) {
     money: 100,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       chat,
       cmd
     }) => {
@@ -645,7 +645,7 @@ export default function info(ev) {
     ${body} ${btn} *Storage:* ${usedDisk} / ${totalDisk} ( ${freeDisk} )
     ${foot}${line}`.trim()
 
-        await xp.sendMessage(chat.id, {
+        await sock.sendMessage(chat.id, {
           text: stats,
           contextInfo: {
             externalAdReply: {
@@ -665,7 +665,7 @@ export default function info(ev) {
         }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })
@@ -680,7 +680,7 @@ export default function info(ev) {
     money: 100,
     exp: 0.1,
 
-    run: async (xp, m, {
+    run: async (sock, m, {
       chat,
       cmd,
       prefix
@@ -702,11 +702,11 @@ export default function info(ev) {
             txt += `*All Tags: ${tagAll}*\n\n`
             txt += `*Cmd ${chat.pushName}: ${usr.cmd}*`
   
-        await xp.sendMessage(chat.id, { text: txt }, { quoted: m })
+        await sock.sendMessage(chat.id, { text: txt }, { quoted: m })
 
       } catch (e) {
         err(`error pada ${cmd}`, e)
-        call(xp, e, m)
+        call(sock, e, m)
       }
     }
   })

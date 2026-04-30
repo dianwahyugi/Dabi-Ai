@@ -11,16 +11,16 @@ const memoryCache = {},
 
 let imgCache = {}
 
-async function getMetadata(id, xp, retry = 2) {
+async function getMetadata(id, sock, retry = 2) {
   if (groupCache.has(id)) return groupCache.get(id)
   try {
-    const m = await xp.groupMetadata(id)
+    const m = await sock.groupMetadata(id)
     groupCache.set(id, m)
     setTimeout(() => groupCache.delete(id), 12e4)
     return m
   } catch (e) {
     return retry > 0
-      ? (await new Promise(r => setTimeout(r, 1e3)), getMetadata(id, xp, retry - 1))
+      ? (await new Promise(r => setTimeout(r, 1e3)), getMetadata(id, sock, retry - 1))
       : null
   }
 }
@@ -73,7 +73,7 @@ function replaceLid(o, v = new WeakSet()) {
   return o
 }
 
-async function call(xp, e, m) {
+async function call(sock, e, m) {
   try {
     const err = (typeof e === 'string' ? e : e?.stack || e?.message || String(e))
             .replace(/file:\/\/\/[^\s)]+/g, '')
@@ -82,13 +82,13 @@ async function call(xp, e, m) {
           chat = global.chat(m),
           sender = chat.sender || 'unknown',
           txt = `Tolong bantu jelaskan error ini dengan bahasa alami dan ramah pengguna:\n\n${e}`,
-          res = await bell(txt, m, xp)
+          res = await bell(txt, m, sock)
 
     res?.msg
-      ? await xp.sendMessage(chat.id, { text: res.msg }, { quoted: m })
-      : await xp.sendMessage(chat.id, { text: `Gagal memproses error: ${res?.message || 'tidak diketahui'}` }, { quoted: m })
+      ? await sock.sendMessage(chat.id, { text: res.msg }, { quoted: m })
+      : await sock.sendMessage(chat.id, { text: `Gagal memproses error: ${res?.message || 'tidak diketahui'}` }, { quoted: m })
   } catch (errSend) {
-    await xp.sendMessage(
+    await sock.sendMessage(
       m?.chat || m?.key?.remoteJid || 'unknown',
       { text: `Gagal menjalankan call(): ${errSend?.message || String(errSend)}` },
       { quoted: m }
@@ -124,10 +124,10 @@ async function func() {
   return Object.assign(global, funcs), funcs
 }
 
-async function filter(xp, m, text) {
+async function filter(sock, m, text) {
   const chat = global.chat(m),
         gcData = get.gc(chat.id),
-        meta = await grupify(xp, m)
+        meta = await grupify(sock, m)
 
   if (!meta) return
 
@@ -150,7 +150,7 @@ async function filter(xp, m, text) {
 
       const isLink = await filter.link(txt)
       return (gcData?.filter?.antilink && botAdm && !usrAdm && isLink)
-        ? await xp.sendMessage(chat.id, { delete: m.key }).catch(() => {})
+        ? await sock.sendMessage(chat.id, { delete: m.key }).catch(() => {})
         : !1
     },
 
@@ -159,7 +159,7 @@ async function filter(xp, m, text) {
       if (!gcData || !botAdm) return
 
       return (gcData?.filter?.antitagsw && botAdm && !usrAdm && txt)
-        ? await xp.sendMessage(chat.id, { delete: m.key }).catch(() => {})
+        ? await sock.sendMessage(chat.id, { delete: m.key }).catch(() => {})
         : !1
     },
 
@@ -167,7 +167,7 @@ async function filter(xp, m, text) {
       if (!gcData || !botAdm) return !1
 
       const text = m.message?.conversation || m.message?.extendedTextMessage?.text || m.message?.extendedTextMessage?.conversation,
-            bot = chat.sender === xp.user?.id?.split(':')[0]
+            bot = chat.sender === sock.user?.id?.split(':')[0]
 
       if (bot || !text) return !1
 
@@ -180,22 +180,22 @@ async function filter(xp, m, text) {
 
       if (!(gcData?.filter?.autoback && isLink && !usrAdm && link)) return !1
 
-      const getlink = await xp.groupInviteCode(chat.id),
+      const getlink = await sock.groupInviteCode(chat.id),
             linkgc = `https://chat.whatsapp.com/${getlink}`,
-            ppgc = await xp.profilePictureUrl(chat.id, 'image'),
+            ppgc = await sock.profilePictureUrl(chat.id, 'image'),
             linkusr = link.split('/').pop().split('?')[0]
 
       let res, is304 = !1
 
       try {
-        res = await xp.groupAcceptInvite(linkusr)
+        res = await sock.groupAcceptInvite(linkusr)
       } catch (e) {
         if (e?.data === 410) return !1
 
         if (e?.data === 401) {
-          await xp.sendMessage(chat.id, { text: 'gw di kick lol' }, { quoted: m }).catch(() => !1)
+          await sock.sendMessage(chat.id, { text: 'gw di kick lol' }, { quoted: m }).catch(() => !1)
 
-          await xp.sendMessage(chat.id, { delete: m.key }).catch(() => !1)
+          await sock.sendMessage(chat.id, { delete: m.key }).catch(() => !1)
 
           global.autoback?.[chat.id]?.[chat.sender] && delete global.autoback[chat.id][chat.sender]
 
@@ -205,16 +205,16 @@ async function filter(xp, m, text) {
         if (e?.data === 304) is304 = !0
 
         if (e?.data === 409) {
-          await xp.sendMessage(chat.id, { text: 'okey gw bck ya' }, { quoted: m }).catch(() => !1)
+          await sock.sendMessage(chat.id, { text: 'okey gw bck ya' }, { quoted: m }).catch(() => !1)
 
           let info = null
 
           try {
-            info = await xp.groupGetInviteInfo(linkusr)
+            info = await sock.groupGetInviteInfo(linkusr)
           } catch {}
 
           if (info?.id) {
-            await xp.sendMessage(info.id, {
+            await sock.sendMessage(info.id, {
               text: `bck tadi @${chat.sender?.replace(/@s\.whatsapp\.net$/, '')} ${linkgc}`,
               mentions: [chat.sender],
               contextInfo: {
@@ -239,7 +239,7 @@ async function filter(xp, m, text) {
       const isGc = is304 ? !1 : isJidGroup(res)
 
       if (!isGc) {
-        await xp.sendMessage(chat.id, {
+        await sock.sendMessage(chat.id, {
           text: is304 ? 'gw gak di acc 3 menit gak di acc del.' : 'acc lama hapus'
         }, { quoted: m }).catch(() => !1)
 
@@ -261,12 +261,12 @@ async function filter(xp, m, text) {
           let info = null, joined = !1
 
           try {
-            info = await xp.groupGetInviteInfo(linkusr)
+            info = await sock.groupGetInviteInfo(linkusr)
           } catch {}
 
           if (info?.id) {
             try {
-              await xp.groupMetadata(info.id)
+              await sock.groupMetadata(info.id)
               joined = !0
             } catch {
               joined = !1
@@ -274,7 +274,7 @@ async function filter(xp, m, text) {
           }
 
           if (joined && info?.id) {
-            await xp.sendMessage(info.id, {
+            await sock.sendMessage(info.id, {
               text: `bck tadi @${chat.sender?.replace(/@s\.whatsapp\.net$/, '')} ${linkgc}`,
               mentions: [chat.sender],
               contextInfo: {
@@ -302,9 +302,9 @@ async function filter(xp, m, text) {
           if (elapsed < 18e4) return
 
           if (is304) {
-            await xp.sendMessage(chat.id, { text: 'lama lu' }, { quoted: m }).catch(() => !1)
+            await sock.sendMessage(chat.id, { text: 'lama lu' }, { quoted: m }).catch(() => !1)
 
-            await xp.sendMessage(chat.id, {
+            await sock.sendMessage(chat.id, {
               delete: {
                 remoteJid: chat.id,
                 fromMe: !1,
@@ -318,9 +318,9 @@ async function filter(xp, m, text) {
             return
           }
 
-          await xp.sendMessage(chat.id, { text: 'lama lu' }, { quoted: m }).catch(() => !1)
+          await sock.sendMessage(chat.id, { text: 'lama lu' }, { quoted: m }).catch(() => !1)
 
-          await xp.sendMessage(chat.id, {
+          await sock.sendMessage(chat.id, {
             delete: {
               remoteJid: chat.id,
               fromMe: !1,
@@ -349,7 +349,7 @@ async function filter(xp, m, text) {
       const hit = list.some(w => txt.toLowerCase().includes(w.toLowerCase()))
 
       return hit && !usrAdm
-        ? await xp.sendMessage(chat.id, { delete: m.key }).catch(() => {})
+        ? await sock.sendMessage(chat.id, { delete: m.key }).catch(() => {})
         : !1
     },
 
@@ -378,7 +378,7 @@ async function filter(xp, m, text) {
       )
 
       return (info?.newsletterJid || isLinkCh)
-        ? xp.sendMessage(chat.id, { delete: m.key }).catch(() => !1)
+        ? sock.sendMessage(chat.id, { delete: m.key }).catch(() => !1)
         : !1
     },
 
@@ -401,7 +401,7 @@ async function filter(xp, m, text) {
             tagAll = tagCount === metadata?.size || tagCount === gcData?.member
 
       return hideTag || abnormalTag || overLimit || tagAll
-        ? (xp.sendMessage(chat.id, { delete: m.key }), !0)
+        ? (sock.sendMessage(chat.id, { delete: m.key }), !0)
         : !0
     }
   }
@@ -409,7 +409,7 @@ async function filter(xp, m, text) {
   return filter
 }
 
-async function cekSpam(xp, m) {
+async function cekSpam(sock, m) {
   const chat = global.chat(m),
         user = m.key.participant || chat.sender,
         usrData = get.db(user),
@@ -434,7 +434,7 @@ async function cekSpam(xp, m) {
     spamData[target].time.last = msgTime
 
     if (spamData[target].count >= 1) {
-      await xp.sendMessage(chat.id, { text: 'jangan spam' }, { quoted: m }),
+      await sock.sendMessage(chat.id, { text: 'jangan spam' }, { quoted: m }),
       spamData[target].block = now + 7e3
 
       return spamData[target].count = 0, !0
@@ -467,7 +467,7 @@ async function _imgTmp() {
   return imgCache.url = await tmpFiles(img)
 }
 
-async function afk(xp, m) {
+async function afk(sock, m) {
   if (!m?.key || m.key.fromMe) return
 
   const chat = global.chat(m)
@@ -499,7 +499,7 @@ async function afk(xp, m) {
 
   if (!chat?.id || !self) return
 
-  if (targetUsr?.afk?.status) return xp.sendMessage(chat.id, { text: `jangan tag dia,\ndia sedang afk, dengan alasan: ${targetUsr?.afk?.reason || 'tidak ada alasan'}\nwaktu AFK: ${calc(targetUsr.afk)}` }, quoted)
+  if (targetUsr?.afk?.status) return sock.sendMessage(chat.id, { text: `jangan tag dia,\ndia sedang afk, dengan alasan: ${targetUsr?.afk?.reason || 'tidak ada alasan'}\nwaktu AFK: ${calc(targetUsr.afk)}` }, quoted)
 
   if (!self.afk?.status) return
 
@@ -515,10 +515,10 @@ async function afk(xp, m) {
 
   save.db()
 
-  return xp.sendMessage(chat.id, { text, ...(tag ? { mentions: [chat.sender] } : {}) }, quoted)
+  return sock.sendMessage(chat.id, { text, ...(tag ? { mentions: [chat.sender] } : {}) }, quoted)
 }
 
-async function _tax(xp, m) {
+async function _tax(sock, m) {
   const chat = global.chat(m),
         usrDb = get.db(chat.sender),
         taxStr = bnk().key?.tax || '0%',

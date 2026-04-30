@@ -1,7 +1,7 @@
 import fetch from 'node-fetch'
 import { vn } from '../cmd/interactive.js'
 
-async function rct_key(xp, m) {
+async function rct_key(sock, m) {
   try {
     const react = m.message?.reactionMessage,
           emoji = react?.text,
@@ -9,21 +9,21 @@ async function rct_key(xp, m) {
 
     if (!emoji || !keyId) return !1
 
-    const target = xp.reactionCache.get(keyId)
+    const target = sock.reactionCache.get(keyId)
     if (!target) return !1
 
     const chat   = global.chat(m),
-          botNum = `${xp.user.id.split(':')[0]}@s.whatsapp.net`,
+          botNum = `${sock.user.id.split(':')[0]}@s.whatsapp.net`,
           fromBot = target.key.participant === botNum || target.key.fromMe
 
     if (chat.group) {
-      const { botAdm, usrAdm } = await grupify(xp, m)
+      const { botAdm, usrAdm } = await grupify(sock, m)
       if (!fromBot && (!usrAdm || !botAdm)) return !1
     }
 
     switch (emoji) {
       case '❌':
-        await xp.sendMessage(chat.id, {
+        await sock.sendMessage(chat.id, {
           delete: {
             remoteJid: chat.id,
             fromMe: fromBot,
@@ -31,12 +31,12 @@ async function rct_key(xp, m) {
             ...(fromBot ? {} : { participant: target.key.participant })
           }
         })
-        xp.reactionCache.delete(keyId)
+        sock.reactionCache.delete(keyId)
         return !0
 
       case '👑':
         if (!chat.group) return !1
-        await xp.groupParticipantsUpdate(
+        await sock.groupParticipantsUpdate(
           chat.id,
           [target.key.participant],
           'promote'
@@ -45,7 +45,7 @@ async function rct_key(xp, m) {
 
       case '🦵':
         if (!chat.group) return !1
-        await xp.groupParticipantsUpdate(
+        await sock.groupParticipantsUpdate(
           chat.id,
           [target.key.participant],
           'remove'
@@ -54,7 +54,7 @@ async function rct_key(xp, m) {
 
       case '💨':
         if (!chat.group) return !1
-        await xp.groupParticipantsUpdate(
+        await sock.groupParticipantsUpdate(
           chat.id,
           [target.key.participant],
           'demote'
@@ -75,7 +75,7 @@ async function rct_key(xp, m) {
         const res = await fetch(`${termaiWeb}/api/text2speech/elevenlabs?text=${encodeURIComponent(text)}&voice=${encodeURIComponent(voice)}&pitch=${encodeURIComponent(pitch)}&speed=${encodeURIComponent(speed)}&key=${termaiKey}`),
               audio = Buffer.from(await res.arrayBuffer())
 
-        await vn(xp, audio, target)
+        await vn(sock, audio, target)
         return !0
 
       default:

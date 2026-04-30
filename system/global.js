@@ -34,6 +34,9 @@ const config = './system/set/config.json',
         footer: () => cfg().botSetting.menuSetting.footer,
         termaiWeb: () => cfg().apikey.termai.web,
         termaiKey: () => cfg().apikey.termai.key,
+        statusReact: () => cfg().botSetting.reactsw,
+        statusAutoread: () => cfg().botSetting.autoreadsw,
+        msgAutoread: () => cfg().botSetting.autoread
       },
       gtr = {
         ...Object.fromEntries(Object.keys(getCfg).map(k => [k, getCfg[k]])),

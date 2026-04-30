@@ -45,11 +45,11 @@ class CmdEmitter extends EventEmitter {
     for (const c2 of cmds) {
       const lc = c2.toLowerCase()
 
-      const handler = async (xp, m, extra) => {
+      const handler = async (sock, m, extra) => {
         try {
           if (def.owner && !own(m)) return
           def.call += 1
-          await def.run(xp, m, extra)
+          await def.run(sock, m, extra)
         } catch (e) {
           err(c.redBright.bold(`Error ${def.name || c2}: `), e)
         }
@@ -180,7 +180,7 @@ const watch = () => {
   }
 }
 
-const handleCmd = async (m, xp, store) => {
+const handleCmd = async (m, sock, store) => {
   try {
     const { text } = getMessageContent(m)
     if (!text || !m.key) return
@@ -192,7 +192,7 @@ const handleCmd = async (m, xp, store) => {
           [cmd, ...args] = cmdText.split(/\s+/),
           _cmdLow = cmd?.toLowerCase()
     if (!_cmdLow) return
-    if (await ocrs(xp, m)) return
+    if (await ocrs(sock, m)) return
 
     const chat = global.chat(m),
           sender = chat.sender?.replace(/@s\.whatsapp\.net$/, ''),
@@ -214,7 +214,7 @@ const handleCmd = async (m, xp, store) => {
       }
     }
 
-    if (!usr ? (xp.sendMessage(chat.id, { text: 'ulangi' }, { quoted: m }), !0) : await cekSpam(xp, m)) return
+    if (!usr ? (sock.sendMessage(chat.id, { text: 'ulangi' }, { quoted: m }), !0) : await cekSpam(sock, m)) return
 
     const exp = evData.exp ?? 0.1,
           expInt = Math.round(exp * 10)
@@ -229,11 +229,11 @@ const handleCmd = async (m, xp, store) => {
       needSv = !0
     }
 
-    if (!cost || cost <= 0) cost = await _tax(xp, m)
+    if (!cost || cost <= 0) cost = await _tax(sock, m)
 
     if (cost > 0) {
       if ((usr.moneyDb?.money || 0) < cost)
-        return xp.sendMessage(chat.id, { text: `uang kamu tersisa Rp ${usr.moneyDb.money.toLocaleString('id-ID')}\n` + `butuh: Rp ${cost.toLocaleString('id-ID')}` }, { quoted: m })
+        return sock.sendMessage(chat.id, { text: `uang kamu tersisa Rp ${usr.moneyDb.money.toLocaleString('id-ID')}\n` + `butuh: Rp ${cost.toLocaleString('id-ID')}` }, { quoted: m })
 
       usr.moneyDb.money -= cost
       bank.key.saldo += cost
@@ -249,7 +249,7 @@ const handleCmd = async (m, xp, store) => {
 
     needSv && await save.db()
 
-    ev.emit(_cmdLow, xp, m, {
+    ev.emit(_cmdLow, sock, m, {
       args,
       chat,
       text,
