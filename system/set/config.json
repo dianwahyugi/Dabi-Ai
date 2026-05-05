@@ -1,10 +1,11 @@
 {
   "ownerSetting": {
     "ownerNumber": [
-      "6285194993977"
+      "6285199635033"
     ],
     "ownerName": "yumi",
-    "public": true
+    "public": true,
+    "loadChat": false
   },
   "botSetting": {
     "botName": "Dabi",
@@ -14,6 +15,7 @@
         ".",
         "-",
         "›",
+        "!",
         "≥"
       ],
       "frame": {
@@ -36,7 +38,7 @@
   },
   "apikey": {
     "termai": {
-      "key": "Bell409",
+      "key": "TermAI-XijRAQ6qXUHUtS7j",
       "web": "https://api.termai.cc"
     }
   }
