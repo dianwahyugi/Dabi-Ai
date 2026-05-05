@@ -50,7 +50,7 @@ export default function game(ev) {
     prefix: !0,
     money: 100,
     exp: 0.1,
-
+  
     run: async (xp, m, {
       chat,
       cmd
@@ -66,17 +66,10 @@ export default function game(ev) {
 
         if (!trg) return xp.sendMessage(chat.id, { text: `${target?.replace(/@s\.whatsapp\.net$/, '') || 'target'} belum terdaftar` }, { quoted: m })
 
-        !usr.game ? usr.game = {} : 0
-        !trg.game ? trg.game = {} : 0
-
-        !usr.game.kill ? usr.game.kill = { status: !1, reset: 0 } : 0
-        !trg.game.kill ? trg.game.kill = { status: !1, reset: 0 } : 0
-
         const now = Date.now(),
               cd = 8.64e7
 
-        if (usr.game.kill.status || !1) return xp.sendMessage(chat.id, { text: 'kamu sudah mati' }, { quoted: m })
-        if (trg.game.kill.status || !1) return xp.sendMessage(chat.id, { text: 'target sudah mati' }, { quoted: m })
+        if (usr.game.kill.status || trg.game.kill.status) return xp.sendMessage(chat.id, { text: usr.game.kill.status ? 'kamu sudah mati' : 'target sudah mati' }, { quoted: m })
 
         if (usr.game.kill.reset && now - usr.game.kill.reset < cd) {
           const sisa = cd - (now - usr.game.kill.reset)
@@ -88,38 +81,33 @@ export default function game(ev) {
               chance = Math.max(1, Math.min(100, Math.floor((lvlUsr / (lvlUsr + lvlTrg)) * 100))),
               roll = Math.floor(Math.random() * 100) + 1
 
-        if (roll <= chance || !1) {
-          const percent = chance / 100,
-                takeExp = Math.floor(lvlTrg * percent),
-                takeMoney = Math.floor((trg.moneyDb?.money || 0) * percent)
+        const win = roll <= chance,
+              percent = chance / 100,
+              takeExp = Math.floor((win ? lvlTrg : lvlUsr) * percent),
+              takeMoney = Math.floor(((win ? trg : usr).moneyDb?.money || 0) * percent)
 
-          trg.exp -= takeExp
-          usr.exp += takeExp
+        win
+          ? (
+              trg.exp -= takeExp,
+              usr.exp += takeExp,
+              trg.moneyDb.money -= takeMoney,
+              usr.moneyDb.money += takeMoney,
+              trg.game.kill.status = !0,
+              usr.game.kill.reset = now,
+              usr.game.kill.target = (usr.game.kill.target ?? 0) + 1
+            )
+          : (
+              usr.exp -= takeExp,
+              trg.exp += takeExp,
+              usr.moneyDb.money -= takeMoney,
+              trg.moneyDb.money += takeMoney,
+              usr.game.kill.status = !0,
+              usr.game.kill.reset = now
+            )
 
-          trg.moneyDb.money -= takeMoney
-          usr.moneyDb.money += takeMoney
+        save.db()
 
-          trg.game.kill.status = !0
-          usr.game.kill.reset = now
-          usr.game.kill.target = (usr.game.kill.target ?? 0) + 1
-
-          return xp.sendMessage(chat.id, { text: `berhasil membunuh target!\n\npeluang: ${chance}%\nexp target: -${takeExp}\nexp kamu: +${takeExp}\nuang: +${takeMoney}` }, { quoted: m })
-        } else {
-          const percent = chance / 100,
-                takeExp = Math.floor(lvlUsr * percent),
-                takeMoney = Math.floor((usr.moneyDb?.money || 0) * percent)
-
-          usr.exp -= takeExp
-          trg.exp += takeExp
-
-          usr.moneyDb.money -= takeMoney
-          trg.moneyDb.money += takeMoney
-
-          usr.game.kill.status = !0
-          usr.game.kill.reset = now
-
-          return xp.sendMessage(chat.id, { text: `gagal membunuh target...\n\n💀 kamu mati\n📉 exp kamu: -${takeExp}\n📈 exp target: +${takeExp}\n💸 uang hilang: ${takeMoney}` }, { quoted: m })
-        }
+        return xp.sendMessage(chat.id, { text: win ? `berhasil membunuh target!\n\npeluang: ${chance}%\nexp target: -${takeExp}\nexp kamu: +${takeExp}\nuang: +${takeMoney}` : `gagal membunuh target...\n\n💀 kamu mati\n📉 exp kamu: -${takeExp}\n📈 exp target: +${takeExp}\n💸 uang hilang: ${takeMoney}` }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
         call(xp, e, m)
@@ -173,7 +161,8 @@ export default function game(ev) {
     run: async (xp, m, {
       args,
       chat,
-      cmd
+      cmd,
+      prefix
     }) => {
       try {
         if (!args) return xp.sendMessage(chat.id, { text: 'contoh: .isiatm 10000' }, { quoted: m })
@@ -181,11 +170,7 @@ export default function game(ev) {
         const usr = get.db(chat.sender),
               nominal = Number(args[0])
 
-        if (!usr || !nominal) {
-          return xp.sendMessage(chat.id, { text: !usr ? 'kamu belum terdaftar coba lagi' : 'nominal tidak valid\ncontoh: .isiatm 10000' }, { quoted: m })
-        }
-
-        if (usr.moneyDb?.money < nominal) return xp.sendMessage(chat.id, { text: `uang kamu hanya tersisa ${usr.moneyDb?.money.toLocaleString('id-ID')}` }, { quoted: m })
+        if (!usr || !nominal || usr.moneyDb?.money < nominal) return xp.sendMessage(chat.id, { text: !usr ? 'kamu belum terdaftar coba lagi' : !nominal ? `nominal tidak valid\ncontoh: ${prefix}${cmd} 10000` : `uang kamu hanya tersisa ${usr.moneyDb?.money.toLocaleString('id-ID')}` }, { quoted: m })
 
         usr.moneyDb.money -= nominal
         usr.moneyDb.moneyInBank += nominal
@@ -402,7 +387,7 @@ export default function game(ev) {
     desc: 'mengambil saldo dari bank',
     owner: !1,
     prefix: !0,
-    money: 1000,
+    money: 1,
     exp: 0.1,
 
     run: async (xp, m, {
@@ -525,9 +510,7 @@ export default function game(ev) {
         trg.moneyDb.money += nominal
         save.db()
 
-        let txt = `Rp ${nominal.toLocaleString('id-ID')} berhasil ditransfer`
-
-        await xp.sendMessage(chat.id, { text: txt }, { quoted: m })
+        await xp.sendMessage(chat.id, { text: `Rp ${nominal.toLocaleString('id-ID')} berhasil ditransfer` }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
         call(xp, e, m)

@@ -2,6 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import AdmZip from "adm-zip"
 import { exec } from 'child_process'
+import { downloadMediaMessage } from 'baileys'
 import { jadiBot } from '../../system/jadibot.js'
 const config = path.join(dirname, './set/config.json'),
       pkg = JSON.parse(fs.readFileSync(path.join(dirname, '../package.json'))),
@@ -713,10 +714,45 @@ export default function owner(ev) {
 
         if (!['on', 'off'].includes(arg)) return xp.sendMessage(chat.id, { text: `gunakan: ${prefix}${cmd} on/off\n\nstatus: ${global.public ? 'Aktif' : 'Tidak Aktif'}` }, { quoted: m })
 
+        if (input === !!cfg?.ownerSetting?.public) return xp.sendMessage(chat.id, { text: `${cmd} sudah ${input ? 'Aktif' : 'Tidak Aktif'}` }, { quoted: m })
+
         cfg.ownerSetting.public = input
         fs.writeFileSync(config, JSON.stringify(cfg, null, 2))
 
         xp.sendMessage(chat.id, { text: `${cmd} ${input ? 'diaktifkan' : 'dimatikan'}` }, { quoted: m })
+      } catch (e) {
+        err(`error pada ${cmd}`, e)
+        call(xp, e, m)
+      }
+    }
+  })
+
+  ev.on({
+    name: 'setpp',
+    cmd: ['setpp', 'setppbot'],
+    tags: 'Owner Menu',
+    desc: `mengganti pp ${botName}`,
+    owner: !0,
+    prefix: !0,
+    money: 1,
+    exp: 0.1,
+
+    run: async (xp, m, {
+      chat,
+      cmd,
+      prefix
+    }) => {
+      try {
+        const q = m.message?.extendedTextMessage?.contextInfo?.quotedMessage,
+              img = q?.imageMessage || m.message?.imageMessage
+
+        if (!img) return xp.sendMessage(chat.id, { text: `reply/kirim gambar dengan caption: ${prefix}${cmd}` }, { quoted: m })
+
+        const media = await downloadMediaMessage({ message: q || m.message }, 'buffer')
+        if (!media) throw new Error('Gagal mengunduh media')
+
+        await xp.setProfilePicture(xp?.user?.id?.replace(/:\d+(?=@)/, ''), media)
+        await xp.sendMessage(chat.id, { text: `foto profile ${botName} berhasil diubah` }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
         call(xp, e, m)
