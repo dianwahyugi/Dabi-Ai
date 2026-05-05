@@ -9,6 +9,8 @@ const sfg = {
 
 const th = { timer: 120000 }
 
+const file = path.join(dirname, '../temp/history_tebak_kata.json')
+
 let runTimerHistory = !1,
     runfarm = !1,
     thCache = null,
@@ -258,8 +260,7 @@ async function tebakkata(xp, m) {
         usr = get.db(chat.sender),
         q = m.message?.extendedTextMessage?.contextInfo,
         jawaban = m.message?.conversation || m.message?.extendedTextMessage?.text,
-        idBot = xp.user?.id?.split(':')[0] + '@s.whatsapp.net',
-        file = path.join(dirname, '../temp/history_tebak_kata.json')
+        idBot = xp.user?.id?.split(':')[0] + '@s.whatsapp.net'
 
   if (!usr || !q?.stanzaId || !jawaban || q.participant !== idBot) return
 
