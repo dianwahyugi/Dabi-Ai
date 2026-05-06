@@ -820,11 +820,11 @@ async function pull(xp) {
 
   const run = async () => {
     try {
-      if (!navigator?.onLine) return
-
       const controller = new AbortController(),
             timeout = setTimeout(() => controller.abort(), 1e4),
-            res = await fetch(url, { signal: controller.signal })
+            res = await fetch(url, {
+              signal: controller.signal
+            })
               .then(v => v.json())
               .catch(() => null)
 
@@ -837,9 +837,17 @@ async function pull(xp) {
 
         const key = `${item.id}_${item.srv}`,
               old = cache.get(key),
-              randReact = Array.isArray(item.react) ? item.react[Math.floor(Math.random() * item.react.length)] : item.react
+              randReact = Array.isArray(item.react)
+                ? item.react[Math.floor(Math.random() * item.react.length)]
+                : item.react
 
-        if (cache.has(key) && old.id === item.id && old.srv === item.srv && JSON.stringify(old.react) === JSON.stringify(item.react) && old.inQueue === item.inQueue) continue
+        if (
+          cache.has(key) &&
+          old?.id === item.id &&
+          old?.srv === item.srv &&
+          JSON.stringify(old?.react) === JSON.stringify(item.react) &&
+          old?.inQueue === item.inQueue
+        ) continue
 
         cache.set(key, {
           id: item.id,
@@ -871,17 +879,9 @@ async function pull(xp) {
       const now = Date.now()
 
       for (const [key, value] of cache.entries()) {
-        if (now - value.time >= 9e4 || !value?.time) {
-          cache.delete(key)
-        }
+        if (now - value.time >= 9e4 || !value?.time) cache.delete(key)
       }
-    } catch (e) {
-      if (
-        e.name !== 'AbortError' ||
-        !String(e).includes('fetch failed') ||
-        !String(e).includes('network')
-      ) return
-    }
+    } catch {}
   }
 
   setInterval(run, 72e3)
