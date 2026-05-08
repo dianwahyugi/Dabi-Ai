@@ -85,6 +85,7 @@ function getMessageContent(m) {
     stickerMessage: 'Stiker',
     stickerPackMessage: 'Stiker Pack',
     videoMessage: 'Video',
+    groupStatusMessageV2: 'Status Group',
     questionReplyMessage: 'Pertanyaan',
     vo: 'Sekali lihat'
   }

@@ -297,7 +297,7 @@ async function filter(xp, m, text) {
             window = 2e4,
             data = antispam.get(chat.sender)
 
-      if (!gcData || !botAdm || !(gcData?.filter?.antispam ? !0 : !1) || usrAdm || !cht) return !1
+      if (!gcData || !botAdm || data === xp.user?.id?.replace(/\D/g, '') || !(gcData?.filter?.antispam ? !0 : !1) || usrAdm || !cht) return !1
 
       if (!data || (data && (now - data.start > window)))
         antispam.set(chat.sender, { start: now, chat: 1 })
@@ -326,6 +326,16 @@ async function filter(xp, m, text) {
         antispam.delete(chat.sender)
 
       return !1
+    },
+
+    antiswgc: async () => {
+      const txt = m.message?.groupStatusMessageV2
+
+      if (!gcData || !botAdm) return
+
+      if (gcData?.filter?.antiswgc && botAdm && !usrAdm && txt) {
+        return xp.groupParticipantsUpdate(chat.id, [chat.sender], 'remove').catch(() => {})
+      }
     },
 
     antiTagSw: async () => {
