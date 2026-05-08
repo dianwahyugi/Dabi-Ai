@@ -135,6 +135,7 @@ export default function info(ev) {
             txt += `${body} ${btn} *Anti Kudeta:* ${gcData?.filter?.antikudet ? 'Aktif' : 'Tidak Aktif'}\n`
             txt += `${body} ${btn} *Anti Link:* ${gcData?.filter?.antilink ? 'Aktif' : 'Tidak Aktif'}\n`
             txt += `${body} ${btn} *Anti Spam:* ${gcData?.filter?.antispam ? 'Aktif' : 'Tidak Aktif'}\n`
+            txt += `${body} ${btn} *Anti Sw Gc:* ${gcData?.filter?.antiswgc ? 'Aktif' : 'Tidak Aktif'}\n`
             txt += `${body} ${btn} *Anti TagSw:* ${gcData?.filter?.antitagsw ? 'Aktif' : 'Tidak Aktif'}\n`
             txt += `${body} ${btn} *Anti Tag All:* ${gcData?.filter?.antitagall ? 'Aktif' : 'Tidak Aktif'}\n`
             txt += `${body} ${btn} *Auto Back:* ${gcData?.filter?.autoback ? 'Aktif' : 'Tidak Aktif'}\n`
@@ -424,14 +425,23 @@ export default function info(ev) {
           .map(c => {
             const cname = c.name || (Array.isArray(c.cmd) ? c.cmd[0] : c.cmd)
             return `${cname} [${c.call}]`
-          })
+          }),
+              up = (s => {
+                const d = Math.floor(s / 86400),
+                      h = Math.floor(s % 86400 / 3600),
+                      m = Math.floor(s % 3600 / 60),
+                      sec = Math.floor(s % 60)
+                return d > 0 
+                  ? `${d}d ${h}h ${m}m ${sec}s` 
+                  : `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`
+              })(process.uptime())
 
         let txt =
           `Halo *${name}*, Saya adalah asisten virtual.\n\n` +
           `${head}${opb} *${botName}* ${clb}\n` +
           `${body} ${btn} *Bot Name: ${botFullName}*\n` +
           `${body} ${btn} *Owner: ${ownerName}*\n` +
-          `${body} ${btn} *Waktu: ${time}*\n` +
+          `${body} ${btn} *Uptime: ${up}*\n` +
           `${body} ${btn} *All Cmd: ${allCmd}*\n` +
           `${body} ${btn} *Total User: ${allUsr}*\n` +
           `${foot}${line}\n\n` +
@@ -467,7 +477,7 @@ export default function info(ev) {
           text: txt,
           contextInfo: {
             externalAdReply: {
-              body: `Ini adalah menu ${botName}`,
+              body: `${time}`,
               thumbnailUrl: thumbnail,
               mediaType: 1,
               renderLargerThumbnail: !0
@@ -561,7 +571,7 @@ export default function info(ev) {
             txt += `${body} ${btn} *Role:* ${usr.ai.role}\n`
             txt += `${foot}${line}\n\n`
             txt += `${head} ${opb} *G A M E* ${clb}\n`
-            txt += `${body} ${btn} *Status Terbunuh:* ${usr.game?.kill?.status ? 'Terbunuh' : 'Tidak Terbunuh'}\n`
+            txt += `${body} ${btn} *Status Terbunuh:* ${usr.game?.dead?.status ? 'Terbunuh' : 'Tidak Terbunuh'}\n`
             txt += `${body} ${btn} *List Kill:* ${usr.game?.kill?.target || 0}\n`
             txt += `${body} ${btn} *Money:* Rp ${usr.moneyDb.money.toLocaleString('id-ID')}\n`
             txt += `${body} ${btn} *Uang Di Bank:* Rp ${usr.moneyDb.moneyInBank.toLocaleString('id-ID')}\n`
@@ -729,7 +739,7 @@ export default function info(ev) {
         let txt = `*All Cmd: ${cmdAll}*\n`
             txt += `*All Tags: ${tagAll}*\n\n`
             txt += `*Cmd ${chat.pushName}: ${usr.cmd}*`
-  
+
         await xp.sendMessage(chat.id, { text: txt }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)

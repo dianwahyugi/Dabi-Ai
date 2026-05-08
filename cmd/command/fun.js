@@ -462,11 +462,10 @@ export default function fun(ev) {
       try {
         if (!chat.group) return xp.sendMessage(chat.id, { text: 'perintah ini hanya bisa digunakan digrup' }, { quoted: m })
 
-        const { usrAdm } = await grupify(xp, m),
-              target = chat?.quoted?.id?.[0],
+        const target = chat?.quoted?.id?.[0],
               gcData = get.gc(chat.id)
 
-          if (!usrAdm || !target) return xp.sendMessage(chat.id, { text: !usrAdm ? 'kamu bukan admin' : `reply/tag target\n\ncontoh: ${prefix}${cmd} @${gcData?.owner?.replace(/@s\.whatsapp\.net$/, '') || 'pengguna'}`, mentions: [gcData?.owner] }, { quoted: m })
+        if (!target) return xp.sendMessage(chat.id, { text: `reply/tag target\n\ncontoh: ${prefix}${cmd} @pengguna` }, { quoted: m })
 
         const groupData = dbsider?.[chat.id] || {},
               totalChat = groupData?.[target] || 0

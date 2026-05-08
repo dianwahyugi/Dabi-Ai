@@ -264,6 +264,53 @@ export default function group(ev) {
   })
 
   ev.on({
+    name: 'anti sw gc',
+    cmd: ['antiswgc', 'swgc'],
+    tags: 'Group Menu',
+    desc: 'anti sw gc',
+    owner: !1,
+    prefix: !0,
+    money: 100,
+    exp: 0.1,
+
+    run: async (xp, m, {
+      args,
+      chat,
+      cmd,
+      prefix
+    }) => {
+      try {
+        if (!chat.group) return xp.sendMessage(chat.id, { text: 'perintah ini hanya bisa digunakan digrup' }, { quoted: m })
+
+        const { usrAdm, botAdm } = await grupify(xp, m),
+              gcData = get.gc(chat.id)
+
+        if (!usrAdm || !botAdm || !gcData) return xp.sendMessage(chat.id, { text: !usrAdm ? 'kamu bukan admin' : !botAdm ? 'aku bukan admin' : `grup ini belum terdaftar ketik ${prefix}daftargc untuk mendaftar` }, { quoted: m })
+
+        const input = args[0]?.toLowerCase(),
+              opsi = !!gcData?.filter?.antiswgc,
+              type = v => v ? 'Aktif' : 'Tidak Aktif',
+              modeswgc = type(gcData?.filter?.antiswgc)
+
+        if (!input || !['on', 'off'].includes(input) || (input === 'on' && opsi) || (input === 'off' && !opsi)) {
+          return xp.sendMessage(chat.id, { text: !input || !['on', 'off'].includes(input) ? `gunakan:\n ${prefix}${cmd} on/off\n\nanti sw gc: ${modeswgc}` : `${cmd} sudah ${opsi ? 'Aktif' : 'nonaktif'}` }, { quoted: m })
+        }
+
+        gcData.filter ??= {}
+        gcData.filter.antiswgc ??= !1
+
+        gcData.filter.antiswgc = input === 'on'
+        save.gc()
+
+        await xp.sendMessage(chat.id, { text: `${cmd} berhasil di-${input === 'on' ? 'aktifkan' : 'nonaktifkan'}` }, { quoted: m })
+      } catch (e) {
+        err(`error pada ${cmd}`, e)
+        call(xp, e, m)
+      }
+    }
+  })
+
+  ev.on({
     name: 'anti tag all',
     cmd: ['antitagall', 'antitag', 'antihidetag'],
     tags: 'Group Menu',
@@ -501,11 +548,11 @@ export default function group(ev) {
 
         const cache = groupCache.get(chat.id) || await xp.groupMetadata(chat.id),
               groupName = cache.subject,
-              owner = cache.participants.find(i => i.admin === 'superadmin')?.phoneNumber || null,
+              owner = cache.participants.find(i => i.admin === 'superadmin')?.phoneNumber || cache?.subjectOwnerPn || cache?.descOwnerPn || null,
               admin = {}
 
         for (const i of cache.participants || []) {
-          const jid = i?.id?.replace(/:\d+(?=@)/, '')
+          const jid = i?.phoneNumber?.replace(/:\d+(?=@)/, '')
           if (!jid || jid === owner || !i.admin) continue
 
           admin[jid] = global.time.timeIndo("Asia/Jakarta", "DD-MM-YYYY HH:mm:ss")
@@ -523,6 +570,7 @@ export default function group(ev) {
             antikudet: !1,
             antispam: !1,
             antitagsw: !1,
+            antiswgc: !1,
             antich: !1,
             autoback: !1,
             antitagall: !1,

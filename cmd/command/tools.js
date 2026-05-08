@@ -480,22 +480,27 @@ export default function tools(ev) {
                 .map(v => q?.[v])
                 .find(Boolean),
               mediaMsg = ['image', 'video', 'audio'],
-              mediaType = mediaMsg.find(t => reply?.mimetype?.includes(t)),
-              time = global.time.timeIndo("Asia/Jakarta", "HH"),
-              { usrAdm } = await grupify(xp, m)
+              mediaType = mediaMsg.find(t => reply?.mimetype?.includes(t))
 
-        if (!usrAdm || !reply || !mediaType || !reply.mediaKey) { return xp.sendMessage(chat.id, { text: !usrAdm ? 'kamu bukan admin' : !reply ? 'reply pesan satu kali lihat' : !mediaType ? 'tipe media tidak didukung' : 'media sudah tidak bisa diambil' }, { quoted: m })
+        if (chat.group) {
+          const { usrAdm } = await grupify(xp, m)
+          if (!usrAdm) return xp.sendMessage(chat.id, { text: 'kamu bukan admin' }, { quoted: m })
+        } else {
+          if (!reply || !mediaType || !reply.mediaKey) {
+            return xp.sendMessage(chat.id, { text: !reply ? 'reply pesan satu kali lihat' : !mediaType ? 'tipe media tidak didukung' : 'media sudah tidak bisa diambil' }, { quoted: m })
+          }
         }
 
-        let media = await downloadMediaMessage({ message: { [`${mediaType}Message`]: reply } }, 'buffer', {}, { logger: xp.logger, reuploadRequest: xp.updateMediaMessage })
+        const media = await downloadMediaMessage({ message: { [`${mediaType}Message`]: reply } }, 'buffer', {}, { logger: xp.logger, reuploadRequest: xp.updateMediaMessage })
 
         if (!media) throw new Error('gagal mengunduh media')
 
         await xp.sendMessage(chat.id, {
-            [mediaType]: media,
-            caption: reply.caption ? `pesan: ${reply.caption}` : 'media berhasil diambil'
-          }, { quoted: m })
-          media = null
+          [mediaType]: media,
+          caption: reply.caption
+            ? `pesan: ${reply.caption}`
+            : 'media berhasil diambil'
+        }, { quoted: m })
       } catch (e) {
         err(`error pada ${cmd}`, e)
         call(xp, e, m)
