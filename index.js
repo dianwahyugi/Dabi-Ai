@@ -77,6 +77,7 @@ const startBot = async () => {
         m = cleanMsg(m)
         m = replaceLid(m)
         m = stubEncode(m)
+        log(m)
 
         if (!global.loadChat && (!m.messageTimestamp || !loadCht(m.messageTimestamp))) continue
 
